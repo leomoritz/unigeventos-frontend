@@ -1,9 +1,32 @@
 'use client';
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, UserPlus, CalendarPlus, Activity, TrendingUp, Clock, Users } from "lucide-react";
+import { BarChart3, UserPlus, CalendarPlus, Activity, Clock, Users, Loader2, ScanQrCodeIcon } from "lucide-react";
+import { getPublishedEventsCount } from "@/services/analyticsService";
 
 export default function AdminDashboard() {
+  const [publishedEventsCount, setPublishedEventsCount] = useState<number | null>(null);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    const fetchPublishedEventsCount = async () => {
+      try {
+        setIsLoadingEvents(true);
+        const count = await getPublishedEventsCount();
+        setPublishedEventsCount(count);
+      } catch (error) {
+        console.error("Erro ao carregar contagem de eventos:", error);
+        setPublishedEventsCount(0);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    fetchPublishedEventsCount();
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -21,17 +44,16 @@ export default function AdminDashboard() {
         <StatCard
           icon={<CalendarPlus size={24} />}
           title="Eventos Ativos"
-          value="12"
-          subtitle="3 novos esta semana"
-          trend={"+15%"}
+          value={isLoadingEvents ? <Loader2 className="h-6 w-6 animate-spin" /> : publishedEventsCount?.toString() || "0"}
+          subtitle="Eventos publicados"
           color="orange"
+          isLoading={isLoadingEvents}
         />
         <StatCard
           icon={<UserPlus size={24} />}
           title="Inscritos Hoje"
           value="87"
           subtitle="Meta: 100 inscrições"
-          trend={"+23%"}
           color="blue"
         />
         <StatCard
@@ -39,7 +61,6 @@ export default function AdminDashboard() {
           title="Check-ins Realizados"
           value="53"
           subtitle="Taxa de 85%"
-          trend={"+8%"}
           color="green"
         />
         <StatCard
@@ -47,7 +68,6 @@ export default function AdminDashboard() {
           title="Eventos Concluídos"
           value="34"
           subtitle="Este mês"
-          trend={"+12%"}
           color="purple"
         />
       </div>
@@ -60,7 +80,7 @@ export default function AdminDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20">
-                  <TrendingUp className="text-orange-600 dark:text-orange-400" size={20} />
+                  <BarChart3 className="text-orange-600 dark:text-orange-400" size={20} />
                 </div>
                 <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Resumo Geral</h2>
               </div>
@@ -89,18 +109,21 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               <QuickActionItem 
                 icon={<CalendarPlus size={16} />}
+                href="/admin/events/create"
                 label="Criar Evento"
                 description="Novo evento"
               />
               <QuickActionItem 
                 icon={<Users size={16} />}
+                href="/admin/subscriptions/list"
                 label="Gerenciar Inscrições"
                 description="Ver inscritos"
               />
               <QuickActionItem 
-                icon={<Activity size={16} />}
-                label="Check-ins Pendentes"
-                description="3 eventos hoje"
+                icon={<ScanQrCodeIcon size={16} />}
+                href="/admin/checkins/list"
+                label="Realizar Check-ins"
+                description="Leitor de QRCode para realizar checkins"
               />
             </div>
           </CardContent>
@@ -115,15 +138,15 @@ function StatCard({
   title, 
   value, 
   subtitle, 
-  trend, 
-  color 
+  color,
+  isLoading = false
 }: { 
   icon: React.ReactNode; 
   title: string; 
-  value: string;
+  value: string | React.ReactNode;
   subtitle?: string;
-  trend?: string;
   color?: string;
+  isLoading?: boolean;
 }) {
   const colorClasses = {
     orange: "from-orange-500/20 to-red-500/20 text-orange-600 dark:text-orange-400",
@@ -137,27 +160,27 @@ function StatCard({
   return (
     <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
       <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedColor.split(' ').slice(0, 2).join(' ')}`}>
-              <span className={selectedColor.split(' ').slice(2).join(' ')}>
-                {icon}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</h3>
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
-              {subtitle && (
-                <p className="text-xs text-slate-500 dark:text-slate-500">{subtitle}</p>
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedColor.split(' ').slice(0, 2).join(' ')}`}>
+            <span className={selectedColor.split(' ').slice(2).join(' ')}>
+              {icon}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</h3>
+            <div className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center">
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  {value}
+                </div>
+              ) : (
+                value
               )}
             </div>
+            {subtitle && (
+              <p className="text-xs text-slate-500 dark:text-slate-500">{subtitle}</p>
+            )}
           </div>
-          {trend && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-500/20">
-              <TrendingUp size={12} className="text-green-600 dark:text-green-400" />
-              <span className="text-xs font-medium text-green-600 dark:text-green-400">{trend}</span>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
@@ -166,15 +189,28 @@ function StatCard({
 
 function QuickActionItem({ 
   icon, 
+  href,
   label, 
   description 
 }: { 
-  icon: React.ReactNode; 
+  icon: React.ReactNode;
+  href?: string;
   label: string; 
   description: string; 
 }) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (href) {
+      router.push(href);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer group">
+    <div 
+      onClick={handleClick}
+      className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer group"
+    >
       <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
         <span className="text-slate-600 dark:text-slate-400">
           {icon}

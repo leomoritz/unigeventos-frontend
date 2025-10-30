@@ -20,6 +20,7 @@ import {
   CalendarSearchIcon,
   X,
   LogOut,
+  ScanQrCodeIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -112,7 +113,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <NavItem href="/admin/persons" icon={<Users size={18} />}>
             Pessoas
           </NavItem>
-          <NavItem href="/admin/checkins" icon={<CheckCircleIcon size={18} />}>
+          <NavItem href="/admin/checkins" icon={<ScanQrCodeIcon size={18} />}>
             Checkins
           </NavItem>
           <NavItem
