@@ -27,17 +27,19 @@ import {
   Clock,
   DollarSign,
   UserCheck,
-  CalendarSearchIcon
+  CalendarSearchIcon,
+  RefreshCw
 } from "lucide-react";
 import {
   EventDataResponse,
   getAllPage,
   publishEvent,
 } from "@/services/eventsService";
-import Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
+import PageHeader from "@/components/admin/PageHeader";
+import ModernCard from "@/components/admin/ModernCard";
+import { ModernCardLoading } from "@/components/admin/ModernCardLoading";
 
 interface PageResponse<T> {
   content: T[];
@@ -162,92 +164,64 @@ export default function EventsListPage() {
     if (currentPage < totalPages - 1) setCurrentPage((prev) => prev + 1);
   };
 
-  const renderSkeleton = () => {
-    return Array.from({ length: viewMode === 'grid' ? 6 : 4 }).map((_, index) => (
-      <Card
-        key={index}
-        className={`bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700 ${
-          viewMode === 'list' ? 'p-6' : 'p-5'
-        }`}
-      >
-        {viewMode === 'grid' ? (
-          <div className="space-y-4">
-            <div className="flex justify-between items-start">
-              <Skeleton height={24} width="70%" className="bg-neutral-600" />
-              <Skeleton height={20} width={60} className="bg-neutral-600" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton height={16} width="80%" className="bg-neutral-600" />
-              <Skeleton height={16} width="60%" className="bg-neutral-600" />
-              <Skeleton height={16} width="90%" className="bg-neutral-600" />
-            </div>
-            <div className="flex gap-2">
-              <Skeleton height={36} width="50%" className="bg-neutral-600" />
-              <Skeleton height={36} width="40%" className="bg-neutral-600" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="flex-1 grid grid-cols-6 gap-4 items-center">
-              <div className="col-span-2">
-                <Skeleton height={20} width="80%" className="bg-neutral-600" />
-                <Skeleton height={16} width="40%" className="bg-neutral-600 mt-1" />
-              </div>
-              <Skeleton height={16} width="70%" className="bg-neutral-600" />
-              <Skeleton height={16} width="60%" className="bg-neutral-600" />
-              <Skeleton height={16} width="80%" className="bg-neutral-600" />
-              <Skeleton height={16} width="30%" className="bg-neutral-600" />
-            </div>
-            <div className="flex gap-2 ml-4">
-              <Skeleton height={36} width={36} className="bg-neutral-600" />
-              <Skeleton height={36} width={36} className="bg-neutral-600" />
-            </div>
-          </div>
-        )}
-      </Card>
-    ));
+  const handleRefresh = () => {
+    setCurrentPage(0);
+    setSearchTerm("");
+    setDebouncedSearch("");
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <PageHeader
+        title="Gerenciar Eventos"
+        description={events.length > 0 ? `${events.length} eventos encontrados` : 'Gerencie todos os eventos da plataforma'}
+        icon={<Calendar size={24} />}
+        actions={
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-600/20 rounded-lg">
-              <Calendar className="h-8 w-8 text-orange-400" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-orange-400">Gerenciar Eventos</h1>
-              <p className="text-neutral-400 text-sm">
-                {events.length > 0 ? `${events.length} eventos encontrados` : 'Gerencie todos os eventos da plataforma'}
-              </p>
-            </div>
-          </div>
-          <Link href="/admin/events/create">
-            <Button className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Evento
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="border-slate-300 dark:border-slate-600 hover:border-orange-500 dark:hover:border-orange-500"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
             </Button>
-          </Link>
-        </div>
+            <Button 
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              variant="outline"
+              size="sm"
+              className="border-slate-300 dark:border-slate-600 hover:border-orange-500"
+            >
+              {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
+            </Button>
+            <Link href="/admin/events/create">
+              <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Evento
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
-        {/* Search and Filters */}
-        <Card className="p-6 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700 shadow-xl">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Search Input */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Buscar eventos por nome..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 h-10 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-400 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:ring-offset-2 focus-visible:border-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
+      {/* Search and Filters */}
+      <ModernCard className="p-4">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 z-10" />
+              <Input
+                ref={inputRef}
+                type="text"
+                placeholder="Buscar eventos por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 focus:border-orange-500 focus:ring-orange-500/20"
+              />
+            </div>
 
               {/* View Mode Toggle */}
               <div className="flex items-center gap-2 bg-neutral-800 rounded-lg p-1">
@@ -275,51 +249,47 @@ export default function EventsListPage() {
                 </Button>
               </div>
 
-              {/* Filters Toggle */}
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="bg-transparent border-neutral-600 text-neutral-300 hover:text-white hover:bg-neutral-700"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-            </div>
+            {/* Filters Toggle */}
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="border-slate-300 dark:border-slate-600 hover:border-orange-500"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </div>
 
-            {/* Filters Panel */}
-            {showFilters && (
-              <div className="border-t border-neutral-700 pt-4 mt-4">
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 text-sm text-neutral-300">
-                    <input
-                      type="checkbox"
-                      checked={onlyPublished}
-                      onChange={() => setOnlyPublished((prev) => !prev)}
-                      className="rounded border-neutral-600 text-orange-600 focus:ring-orange-500/20"
-                    />
-                    <CheckCircle2 className="h-4 w-4 text-green-400" />
-                    Apenas eventos publicados
-                  </label>
-                </div>
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={onlyPublished}
+                    onChange={() => setOnlyPublished((prev) => !prev)}
+                    className="rounded border-slate-300 dark:border-slate-600 text-orange-600 focus:ring-orange-500/20"
+                  />
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  Apenas eventos publicados
+                </label>
               </div>
-            )}
-          </div>
-        </Card>
+            </div>
+          )}
+        </div>
+      </ModernCard>
 
-        {/* Events Grid/List */}
-        {loading ? (
-          <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-            {renderSkeleton()}
-          </div>
-        ) : events.length > 0 ? (
-          <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-            {events.map((event) => (
-              <Card
-                key={event.id}
-                className={`bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] text-white border border-neutral-700 shadow-lg hover:shadow-xl transition-all duration-200 ${
-                  viewMode === 'list' ? 'p-6' : 'p-5 hover:border-orange-500/50 transform hover:-translate-y-1'
-                }`}
-              >
+      {/* Events Grid/List */}
+      {loading ? (
+        <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+          <ModernCardLoading count={viewMode === 'grid' ? 6 : 4} />
+        </div>
+      ) : events.length > 0 ? (
+        <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+          {events.map((event) => (
+            <ModernCard key={event.id} className="group">
+              <div className="p-6">
                 {viewMode === 'grid' ? (
                   // Grid View
                   <div className="space-y-4">
@@ -331,15 +301,15 @@ export default function EventsListPage() {
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                           {event.isFree && (
-                            <span className="bg-green-600/20 border border-green-600/30 text-green-400 text-xs font-medium px-2 py-1 rounded-full">
+                            <span className="bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400 text-xs font-medium px-2 py-1 rounded-full">
                               <DollarSign className="h-3 w-3 inline mr-1" />
                               Gratuito
                             </span>
                           )}
                           <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                             event.isPublished 
-                              ? 'bg-green-600/20 border border-green-600/30 text-green-400' 
-                              : 'bg-yellow-600/20 border border-yellow-600/30 text-yellow-400'
+                              ? 'bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400' 
+                              : 'bg-yellow-100 dark:bg-yellow-500/20 border border-yellow-200 dark:border-yellow-500/30 text-yellow-700 dark:text-yellow-400'
                           }`}>
                             {event.isPublished ? (
                               <>
@@ -357,37 +327,37 @@ export default function EventsListPage() {
                       </div>
                     </div>
 
-                    {/* Event Info */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-neutral-300">
-                        <Calendar className="h-4 w-4 text-orange-400" />
-                        <span>
-                          {new Date(event.startDatetime).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit', 
-                            year: 'numeric'
-                          })} - {new Date(event.endDatetime).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
+                  {/* Event Info */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <span>
+                        {new Date(event.startDatetime).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit', 
+                          year: 'numeric'
+                        })} - {new Date(event.endDatetime).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
 
-                      <div className="flex items-center gap-2 text-sm text-neutral-300">
-                        <MapPin className="h-4 w-4 text-orange-400" />
-                        <span className="truncate">{event.location}</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <MapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
 
-                      <div className="flex items-center gap-2 text-sm text-neutral-300">
-                        <Tag className="h-4 w-4 text-orange-400" />
-                        <span>{eventTypeLabels[event.type] || event.type}</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Tag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <span>{eventTypeLabels[event.type] || event.type}</span>
+                    </div>
 
-                      <div className="flex items-center gap-2 text-sm text-neutral-300">
-                        <UserCheck className="h-4 w-4 text-orange-400" />
-                        <span>{event?.organizer?.name}</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <UserCheck className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <span>{event?.organizer?.name}</span>
+                    </div>
 
                       <div className="flex items-center gap-2 text-sm text-neutral-300">
                         <Users className="h-4 w-4 text-orange-400" />
@@ -397,31 +367,31 @@ export default function EventsListPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
-                      <Link href={`/admin/events/${event.id}`} className="flex-1">
-                        <Button
-                          variant="outline"
-                          className="w-full bg-transparent border-orange-600/50 text-orange-400 hover:bg-orange-600/10 hover:border-orange-500"
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Editar
-                        </Button>
-                      </Link>
-                      {!event.isPublished && (
-                        <Button
-                          onClick={() => publishEventById(event.id)}
-                          disabled={publishingId === event.id}
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
-                        >
-                          {publishingId === event.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Megaphone className="h-4 w-4 mr-2" />
-                              Publicar
-                            </>
-                          )}
-                        </Button>
-                      )}
+                    <Link href={`/admin/events/${event.id}`} className="flex-1">
+                      <Button
+                        variant="outline"
+                        className="w-full border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:border-orange-300 dark:hover:border-orange-500"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </Button>
+                    </Link>
+                    {!event.isPublished && (
+                      <Button
+                        onClick={() => publishEventById(event.id)}
+                        disabled={publishingId === event.id}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                      >
+                        {publishingId === event.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Megaphone className="h-4 w-4 mr-2" />
+                            Publicar
+                          </>
+                        )}
+                      </Button>
+                    )}
                     </div>
                   </div>
                 ) : (
@@ -494,77 +464,71 @@ export default function EventsListPage() {
                     </div>
                   </div>
                 )}
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12 text-center bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700">
-            <SearchX className="mx-auto h-16 w-16 text-neutral-500 mb-4" />
-            <h3 className="text-xl font-medium text-neutral-300 mb-2">Nenhum evento encontrado</h3>
-            <p className="text-neutral-400 mb-6">
-              {searchTerm 
-                ? `Nenhum evento encontrado para "${searchTerm}". Tente ajustar os termos de busca.` 
-                : onlyPublished 
-                ? 'Nenhum evento publicado encontrado. Publique alguns eventos para vê-los aqui.'
-                : 'Comece criando seu primeiro evento na plataforma.'
-              }
-            </p>
-            {!searchTerm && (
-              <Link href="/admin/events/create">
-                <Button className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Primeiro Evento
-                </Button>
-              </Link>
-            )}
-          </Card>
-        )}
-
-        {/* Pagination */}
-        {!loading && totalPages > 1 && (
-          <Card className="p-4 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700">
-            <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4">
-              <Button
-                onClick={handlePrevPage}
-                disabled={currentPage === 0}
-                variant="outline"
-                className={`${
-                  currentPage === 0
-                    ? "bg-transparent border-neutral-600 text-neutral-500 cursor-not-allowed"
-                    : "bg-transparent border-neutral-600 text-neutral-300 hover:text-white hover:bg-neutral-700 hover:border-neutral-500"
-                }`}
-              >
-                <ArrowLeftCircle className="mr-2 h-4 w-4" />
-                Anterior
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <span className="text-neutral-300 text-sm">
-                  Página <strong className="text-orange-400">{currentPage + 1}</strong> de{" "}
-                  <strong className="text-orange-400">{totalPages}</strong>
-                </span>
-                <span className="text-neutral-500 text-sm">
-                  • {events.length} eventos
-                </span>
               </div>
+            </ModernCard>
+          ))}
+        </div>
+      ) : (
+        <ModernCard className="text-center py-12">
+          <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-full w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+            <SearchX className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-xl font-medium text-slate-900 dark:text-slate-100 mb-2">Nenhum evento encontrado</h3>
+          <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+            {searchTerm 
+              ? `Nenhum evento encontrado para "${searchTerm}". Tente ajustar os termos de busca.` 
+              : onlyPublished 
+              ? 'Nenhum evento publicado encontrado. Publique alguns eventos para vê-los aqui.'
+              : 'Comece criando seu primeiro evento na plataforma.'
+            }
+          </p>
+          {!searchTerm && (
+            <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+              <Link href="/admin/events/create" className="flex items-center">
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Evento
+              </Link>
+            </Button>
+          )}
+        </ModernCard>
+      )}
 
-              <Button
-                onClick={handleNextPage}
-                disabled={currentPage >= totalPages - 1}
-                variant="outline"
-                className={`${
-                  currentPage >= totalPages - 1
-                    ? "bg-transparent border-neutral-600 text-neutral-500 cursor-not-allowed"
-                    : "bg-transparent border-neutral-600 text-neutral-300 hover:text-white hover:bg-neutral-700 hover:border-neutral-500"
-                }`}
-              >
-                Próxima
-                <ArrowRightCircle className="ml-2 h-4 w-4" />
-              </Button>
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <ModernCard className="p-4">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+            <Button
+              onClick={handlePrevPage}
+              disabled={currentPage === 0}
+              variant="outline"
+              className="w-full lg:w-auto border-slate-300 dark:border-slate-600 hover:border-orange-500 disabled:opacity-50"
+            >
+              <ArrowLeftCircle className="h-4 w-4 mr-2" />
+              Anterior
+            </Button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-slate-600 dark:text-slate-300 text-center">
+              <span className="text-sm">
+                Página <strong className="text-orange-600 dark:text-orange-400">{currentPage + 1}</strong> de{" "}
+                <strong className="text-orange-600 dark:text-orange-400">{totalPages}</strong>
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                • {events.length} eventos exibidos
+              </span>
             </div>
-          </Card>
-        )}
-      </div>
+
+            <Button
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 1}
+              variant="outline"
+              className="w-full lg:w-auto border-slate-300 dark:border-slate-600 hover:border-orange-500 disabled:opacity-50"
+            >
+              Próxima
+              <ArrowRightCircle className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </ModernCard>
+      )}
     </div>
   );
 }

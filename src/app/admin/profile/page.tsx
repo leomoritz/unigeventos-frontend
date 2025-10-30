@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { User, Edit, ArrowLeft, Loader2 } from "lucide-react";
+import PageHeader from "@/components/admin/PageHeader";
+import ModernCard from "@/components/admin/ModernCard";
 import ProfileView from "@/components/profile/ProfileView";
 import { getCurrentUserPerson } from "@/services/profileService";
 import { PersonResponse } from "@/services/personService";
@@ -33,10 +35,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-          <p className="text-neutral-400">Carregando perfil...</p>
+      <div className="min-h-screen w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <ModernCard className="p-8">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+              <p className="text-slate-400">Carregando perfil...</p>
+            </div>
+          </ModernCard>
         </div>
       </div>
     );
@@ -44,12 +50,16 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => router.push("/dashboard")} className="bg-orange-500">
-            Voltar ao Dashboard
-          </Button>
+      <div className="min-h-screen w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <ModernCard className="p-8">
+            <div className="text-center">
+              <p className="text-red-400 mb-4">{error}</p>
+              <Button onClick={() => router.push("/admin")} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                Voltar ao Dashboard
+              </Button>
+            </div>
+          </ModernCard>
         </div>
       </div>
     );
@@ -57,12 +67,16 @@ export default function ProfilePage() {
 
   if (!person) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-orange-500 mb-4">Este usuário não possui uma pessoa associada.</p>
-          <Button onClick={() => router.push("/dashboard")} className="bg-orange-500">
-            Voltar ao Dashboard
-          </Button>
+      <div className="min-h-screen w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <ModernCard className="p-8">
+            <div className="text-center">
+              <p className="text-orange-400 mb-4">Este usuário não possui uma pessoa associada.</p>
+              <Button onClick={() => router.push("/admin")} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                Voltar ao Dashboard
+              </Button>
+            </div>
+          </ModernCard>
         </div>
       </div>
     );
@@ -71,39 +85,29 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen w-full">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 p-2 bg-orange-600/20 rounded-lg">
-              <User className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">
-                Meu Perfil
-              </h1>
-              <p className="text-neutral-400 text-sm mt-1">
-                Visualize suas informações pessoais
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              onClick={() => router.back()}
-              variant="outline"
-              className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-600"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <Link href="/admin/edit-profile">
-              <Button className="bg-orange-500 hover:bg-orange-600">
-                <Edit className="h-4 w-4 mr-2" />
-                Editar Perfil
+        <PageHeader
+          icon={<User className="h-6 w-6 sm:h-8 sm:w-8" />}
+          title="Meu Perfil"
+          description="Visualize suas informações pessoais"
+          actions={
+            <div className="flex gap-3">
+              <Button
+                onClick={() => router.back()}
+                variant="outline"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
               </Button>
-            </Link>
-          </div>
-        </div>
+              <Link href="/admin/edit-profile">
+                <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Perfil
+                </Button>
+              </Link>
+            </div>
+          }
+        />
 
         {/* Profile Content */}
         <ProfileView person={person} theme="dark" showLoginInfo={true} />

@@ -12,7 +12,9 @@ import {
 } from "@/services/registrationService";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import ModernCard from "@/components/admin/ModernCard";
+import ModernCardLoading from "@/components/admin/ModernCard";
+import PageHeader from "@/components/admin/PageHeader";
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeftCircle,
@@ -48,7 +50,7 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
-import { CardLoading } from "@/components/ui/loading";
+
 
 const ClientOnlyAsyncSelect = dynamic(() => import("react-select/async"), {
   ssr: false,
@@ -236,51 +238,43 @@ export default function EventSubscriptionList() {
       case "REFUNDED":
         return "text-purple-400 bg-purple-600/20 border-purple-600/50";
       default:
-        return "text-neutral-400 bg-neutral-600/20 border-neutral-600/50";
+        return "text-slate-400 bg-slate-600/20 border-slate-600/50";
     }
   };
 
   return (
     <div className="min-h-screen w-full">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-start">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 p-2 bg-orange-600/20 rounded-lg">
-              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-orange-400 truncate">
-                Inscrições por Evento
-              </h1>
-              <p className="text-neutral-400 text-sm mt-1">
-                {loading
-                  ? "Carregando..."
-                  : selectedEvent
-                  ? `${totalElements} inscrições encontradas`
-                  : "Selecione um evento para ver as inscrições"}
-              </p>
-            </div>
-          </div>
-
-          {selectedEvent && (
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              variant="outline"
-              className="bg-neutral-800 hover:bg-neutral-700 text-orange-400 border-neutral-600 hover:border-orange-500"
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              <span className="hidden sm:inline">Atualizar</span>
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          icon={<Users className="h-6 w-6 sm:h-8 sm:w-8" />}
+          title="Inscrições por Evento"
+          description={
+            loading
+              ? "Carregando..."
+              : selectedEvent
+              ? `${totalElements} inscrições encontradas`
+              : "Selecione um evento para ver as inscrições"
+          }
+          actions={
+            selectedEvent ? (
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                variant="outline"
+                className="bg-slate-800 hover:bg-slate-700 text-orange-400 border-slate-600 hover:border-orange-500"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                <span className="hidden sm:inline">Atualizar</span>
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Event Selector */}
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700 shadow-xl">
-          <label className="text-sm text-neutral-300 mb-2 block flex items-center gap-2">
+        <ModernCard className="p-4 sm:p-6">
+          <label className="text-sm text-slate-300 mb-2 block flex items-center gap-2">
             <Calendar className="h-4 w-4 text-orange-400" />
             Selecione o Evento
           </label>
@@ -322,11 +316,11 @@ export default function EventSubscriptionList() {
               }),
             }}
           />
-        </Card>
+        </ModernCard>
 
         {/* Search and Filters */}
         {selectedEvent && (
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] border border-neutral-700 shadow-xl">
+          <ModernCard className="p-4 sm:p-6">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 {/* Search Input */}
@@ -336,7 +330,7 @@ export default function EventSubscriptionList() {
                     placeholder="Buscar por nome do participante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 bg-neutral-800 border-neutral-600 text-white placeholder-neutral-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 h-10"
+                    className="w-full pl-10 pr-4 bg-slate-800 border-slate-600 text-white placeholder-slate-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 h-10"
                   />
                 </div>
 
@@ -344,7 +338,7 @@ export default function EventSubscriptionList() {
                 <Button
                   variant="outline"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="bg-transparent border-neutral-600 text-neutral-300 hover:text-white hover:bg-neutral-700"
+                  className="bg-transparent border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Filtros
@@ -353,14 +347,14 @@ export default function EventSubscriptionList() {
 
               {/* Filters Panel */}
               {showFilters && (
-                <div className="pt-4 border-t border-neutral-700">
+                <div className="pt-4 border-t border-slate-700">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-neutral-300 mb-2 block">Status</label>
+                      <label className="text-sm text-slate-300 mb-2 block">Status</label>
                       <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full h-10 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
+                        className="w-full h-10 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
                       >
                         <option value="ALL">Todos</option>
                         <option value="CONFIRMED">Confirmado</option>
@@ -371,11 +365,11 @@ export default function EventSubscriptionList() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm text-neutral-300 mb-2 block">Check-in</label>
+                      <label className="text-sm text-slate-300 mb-2 block">Check-in</label>
                       <select
                         value={checkinFilter}
                         onChange={(e) => setCheckinFilter(e.target.value)}
-                        className="w-full h-10 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
+                        className="w-full h-10 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
                       >
                         <option value="ALL">Todos</option>
                         <option value="CHECKED_IN">Check-in Realizado</option>
@@ -386,35 +380,51 @@ export default function EventSubscriptionList() {
                 </div>
               )}
             </div>
-          </Card>
+          </ModernCard>
         )}
 
         {/* Results Grid */}
         {loading ? (
           <div className="w-full">
-            <CardLoading count={12} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <ModernCard key={index} className="p-4 sm:p-5 animate-pulse">
+                  <div className="space-y-3">
+                    <div className="h-4 bg-slate-600 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+                    <div className="h-3 bg-slate-700 rounded w-2/3"></div>
+                    <div className="space-y-2">
+                      <div className="h-2 bg-slate-800 rounded"></div>
+                      <div className="h-2 bg-slate-800 rounded w-4/5"></div>
+                      <div className="h-2 bg-slate-800 rounded w-3/5"></div>
+                    </div>
+                    <div className="h-16 bg-slate-600 rounded mx-auto w-16"></div>
+                  </div>
+                </ModernCard>
+              ))}
+            </div>
           </div>
         ) : !selectedEvent ? (
           <div className="text-center py-12 px-4">
-            <div className="p-4 bg-neutral-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-neutral-400" />
+            <div className="p-4 bg-slate-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-neutral-300 mb-2">
+            <h3 className="text-lg font-medium text-slate-300 mb-2">
               Nenhum evento selecionado
             </h3>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-slate-400">
               Selecione um evento acima para visualizar as inscrições
             </p>
           </div>
         ) : filteredSubscriptions.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <div className="p-4 bg-neutral-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Users className="h-8 w-8 text-neutral-400" />
+            <div className="p-4 bg-slate-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Users className="h-8 w-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-neutral-300 mb-2">
+            <h3 className="text-lg font-medium text-slate-300 mb-2">
               Nenhuma inscrição encontrada
             </h3>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-slate-400">
               {searchTerm || statusFilter !== "ALL" || checkinFilter !== "ALL"
                 ? "Tente ajustar os filtros de busca"
                 : "Ainda não há inscrições para este evento"}
@@ -423,9 +433,9 @@ export default function EventSubscriptionList() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredSubscriptions.map((sub) => (
-              <Card
+              <ModernCard
                 key={sub.id}
-                className="group flex flex-col h-full p-4 sm:p-5 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] text-white border border-neutral-700 rounded-lg shadow-lg hover:shadow-xl hover:border-orange-500/50 transition-all duration-300"
+                className="group flex flex-col h-full p-4 sm:p-5 text-white"
               >
                 {/* Header with Name and Actions */}
                 <div className="flex items-start justify-between mb-4">
@@ -450,15 +460,15 @@ export default function EventSubscriptionList() {
                     <DropdownMenuContent
                       side="bottom"
                       align="end"
-                      className="bg-[#2b2b2b] border border-neutral-700 text-white rounded-md shadow-lg w-56 mt-2 p-1 z-50"
+                      className="bg-slate-800 border border-slate-700 text-white rounded-md shadow-lg w-56 mt-2 p-1 z-50"
                     >
                       <DropdownMenuItem
                         disabled={sub.checkedIn || sub.status !== "CONFIRMED"}
                         onSelect={() => handleCheckin(sub.id)}
                         className={`px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                           sub.checkedIn || sub.status !== "CONFIRMED"
-                            ? "text-neutral-400 cursor-not-allowed opacity-50"
-                            : "text-neutral-200 hover:bg-neutral-700 hover:text-white"
+                            ? "text-slate-400 cursor-not-allowed opacity-50"
+                            : "text-slate-200 hover:bg-slate-700 hover:text-white"
                         }`}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2 inline" />
@@ -469,8 +479,8 @@ export default function EventSubscriptionList() {
                         onSelect={() => handleCancel(sub.id)}
                         className={`px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                           sub.status === "CANCELED"
-                            ? "text-neutral-400 cursor-not-allowed opacity-50"
-                            : "text-neutral-200 hover:bg-neutral-700 hover:text-white"
+                            ? "text-slate-400 cursor-not-allowed opacity-50"
+                            : "text-slate-200 hover:bg-slate-700 hover:text-white"
                         }`}
                       >
                         <XCircle className="h-4 w-4 mr-2 inline" />
@@ -481,8 +491,8 @@ export default function EventSubscriptionList() {
                         onSelect={() => handlePutOnWaitingList(sub.id)}
                         className={`px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                           sub.status !== "PENDING"
-                            ? "text-neutral-400 cursor-not-allowed opacity-50"
-                            : "text-neutral-200 hover:bg-neutral-700 hover:text-white"
+                            ? "text-slate-400 cursor-not-allowed opacity-50"
+                            : "text-slate-200 hover:bg-slate-700 hover:text-white"
                         }`}
                       >
                         <Clock className="h-4 w-4 mr-2 inline" />
@@ -497,8 +507,8 @@ export default function EventSubscriptionList() {
                         }}
                         className={`px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                           sub.status !== "PENDING" && sub.status !== "WAITLIST"
-                            ? "text-neutral-400 cursor-not-allowed opacity-50"
-                            : "text-neutral-200 hover:bg-neutral-700 hover:text-white"
+                            ? "text-slate-400 cursor-not-allowed opacity-50"
+                            : "text-slate-200 hover:bg-slate-700 hover:text-white"
                         }`}
                       >
                         <Tag className="h-4 w-4 mr-2 inline" />
@@ -509,8 +519,8 @@ export default function EventSubscriptionList() {
                         onSelect={() => handleRepay(sub.id)}
                         className={`px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                           sub.status !== "CONFIRMED"
-                            ? "text-neutral-400 cursor-not-allowed opacity-50"
-                            : "text-neutral-200 hover:bg-neutral-700 hover:text-white"
+                            ? "text-slate-400 cursor-not-allowed opacity-50"
+                            : "text-slate-200 hover:bg-slate-700 hover:text-white"
                         }`}
                       >
                         <DollarSign className="h-4 w-4 mr-2 inline" />
@@ -524,7 +534,7 @@ export default function EventSubscriptionList() {
                 <div className="flex-1 space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3 text-orange-400" />
-                    <span className="text-neutral-400">Inscrição:</span>
+                    <span className="text-slate-400">Inscrição:</span>
                     <span className="text-white">
                       {new Date(sub.registrationDate).toLocaleDateString("pt-BR")}
                     </span>
@@ -532,7 +542,7 @@ export default function EventSubscriptionList() {
 
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-3 w-3 text-orange-400" />
-                    <span className="text-neutral-400">Status:</span>
+                    <span className="text-slate-400">Status:</span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs border ${getStatusColor(
                         sub.status
@@ -544,46 +554,46 @@ export default function EventSubscriptionList() {
 
                   <div className="flex items-center gap-2">
                     <Tag className="h-3 w-3 text-orange-400" />
-                    <span className="text-neutral-400">Lote:</span>
+                    <span className="text-slate-400">Lote:</span>
                     <span className="text-white truncate">{sub.batch.name}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-3 w-3 text-orange-400" />
-                    <span className="text-neutral-400">Valor:</span>
+                    <span className="text-slate-400">Valor:</span>
                     <span className="text-white">R$ {sub.amountPaid.toFixed(2)}</span>
                   </div>
 
                   {sub.totalDiscount > 0 && (
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-3 w-3 text-green-400" />
-                      <span className="text-neutral-400">Desconto:</span>
+                      <span className="text-slate-400">Desconto:</span>
                       <span className="text-green-400">R$ {sub.totalDiscount.toFixed(2)}</span>
                     </div>
                   )}
 
                   <div className="flex items-center gap-2">
                     <Truck className="h-3 w-3 text-orange-400" />
-                    <span className="text-neutral-400">Transporte:</span>
+                    <span className="text-slate-400">Transporte:</span>
                     <span className="text-white text-xs truncate">
                       {TransportationLabels[sub.transportationType] || sub.transportationType}
                     </span>
                   </div>
 
                   {sub.ministries && (
-                    <div className="pt-2 border-t border-neutral-700">
-                      <span className="text-neutral-400 text-xs">Ministérios:</span>
+                    <div className="pt-2 border-t border-slate-700">
+                      <span className="text-slate-400 text-xs">Ministérios:</span>
                       <p className="text-white text-xs mt-1">{sub.ministries}</p>
                     </div>
                   )}
                 </div>
 
                 {/* QR Code and Check-in Status */}
-                <div className="mt-4 pt-4 border-t border-neutral-700 flex flex-col items-center gap-3">
+                <div className="mt-4 pt-4 border-t border-slate-700 flex flex-col items-center gap-3">
                   <img
                     src={`data:image/png;base64,${sub.qrCodeBase64}`}
                     alt="QR Code"
-                    className="w-20 h-20 rounded-md border-2 border-neutral-600"
+                    className="w-20 h-20 rounded-md border-2 border-slate-600"
                   />
                   {sub.checkedIn && (
                     <span className="flex items-center gap-1 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -592,14 +602,14 @@ export default function EventSubscriptionList() {
                     </span>
                   )}
                 </div>
-              </Card>
+              </ModernCard>
             ))}
           </div>
         )}
 
         {/* Pagination */}
         {!loading && selectedEvent && filteredSubscriptions.length > 0 && totalPages > 1 && (
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
             <Button
               onClick={handlePrevPage}
               disabled={currentPage === 0}
@@ -610,12 +620,12 @@ export default function EventSubscriptionList() {
               <span>Anterior</span>
             </Button>
 
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-neutral-300 text-center order-first lg:order-none">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-slate-300 text-center order-first lg:order-none">
               <span className="text-sm whitespace-nowrap">
                 Página <strong className="text-orange-400">{currentPage + 1}</strong> de{" "}
                 <strong className="text-orange-400">{totalPages}</strong>
               </span>
-              <span className="text-xs text-neutral-400 hidden sm:inline">
+              <span className="text-xs text-slate-400 hidden sm:inline">
                 ({Math.min(currentPage * 12 + 1, totalElements)}-
                 {Math.min((currentPage + 1) * 12, totalElements)} de {totalElements} itens)
               </span>
@@ -635,18 +645,18 @@ export default function EventSubscriptionList() {
 
         {/* Change Batch Modal */}
         <Dialog open={isChangeBatchModalOpen} onOpenChange={setIsChangeBatchModalOpen}>
-          <DialogContent className="bg-neutral-900 text-white border border-neutral-700">
+          <DialogContent className="bg-slate-900 text-white border border-slate-700">
             <DialogHeader>
               <DialogTitle className="text-orange-400">Alterar Lote da Inscrição</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-3">
-              <label htmlFor="batch-select" className="text-sm text-neutral-300">
+              <label htmlFor="batch-select" className="text-sm text-slate-300">
                 Selecione o novo lote:
               </label>
               <select
                 id="batch-select"
-                className="bg-neutral-800 text-white border border-neutral-600 rounded-md px-3 py-2 w-full focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
+                className="bg-slate-800 text-white border border-slate-600 rounded-md px-3 py-2 w-full focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
                 value={selectedBatchId || ""}
                 onChange={(e) => setSelectedBatchId(e.target.value)}
               >
@@ -669,7 +679,7 @@ export default function EventSubscriptionList() {
                   setSelectedSubId(null);
                 }}
                 variant="outline"
-                className="bg-transparent border-neutral-600 text-neutral-300 hover:bg-neutral-700"
+                className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Cancelar
               </Button>

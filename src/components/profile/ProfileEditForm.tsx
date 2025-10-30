@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ModernCard from "@/components/admin/ModernCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { 
   User, Mail, Phone, Calendar, Heart, Church, 
-  Shirt, Music, IdCard, Loader2, CheckCircle2, XCircle, Upload
+  Shirt, Music, IdCard, Loader2, CheckCircle2, XCircle, Upload, Camera
 } from "lucide-react";
 import { updateCurrentUserPerson, uploadProfilePhoto, UpdatePersonPayload } from "@/services/profileService";
 import { 
@@ -72,16 +72,12 @@ export default function ProfileEditForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const cardClass = isDark
-    ? "bg-[#2b2b2b] border-[#444] text-neutral-200 shadow-lg"
-    : "bg-white border-gray-200 text-gray-900 shadow-lg";
-
   const inputClass = isDark
-    ? "bg-[#1a1a1a] border-[#404040] text-neutral-100 placeholder:text-neutral-500 focus:border-orange-500 focus:ring-orange-500/20 hover:border-[#505050] transition-all duration-200"
+    ? "bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-400 focus:border-orange-500 focus:ring-orange-500/20 hover:border-slate-600 transition-all duration-200"
     : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-orange-500 focus:ring-orange-500/20 hover:border-gray-400 transition-all duration-200";
 
   const selectClass = isDark
-    ? "bg-[#1a1a1a] border-[#404040] text-neutral-100 focus:border-orange-500 focus:ring-orange-500/20 hover:border-[#505050] transition-all duration-200"
+    ? "bg-slate-800/50 border-slate-700 text-white focus:border-orange-500 focus:ring-orange-500/20 hover:border-slate-600 transition-all duration-200"
     : "bg-white border-gray-300 text-gray-900 focus:border-orange-500 focus:ring-orange-500/20 hover:border-gray-400 transition-all duration-200";
 
   const handleChange = (field: string, value: string) => {
@@ -167,7 +163,8 @@ export default function ProfileEditForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="max-w-4xl mx-auto p-6 sm:p-8 lg:p-10">
+      <form onSubmit={handleSubmit} className="space-y-8">
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/50 text-red-500">
           <XCircle size={18} />
@@ -183,67 +180,68 @@ export default function ProfileEditForm({
       )}
 
       {/* Photo Upload */}
-      <Card className={cardClass}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-orange-500" />
+      <ModernCard className="mb-6 p-6 sm:p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-lg">
+            <Camera className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-400 dark:to-orange-500 bg-clip-text text-transparent">
             Foto de Perfil
-          </CardTitle>
-          <CardDescription className={isDark ? "text-neutral-400" : "text-gray-600"}>
-            Escolha uma foto que represente você
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative">
-              <Avatar
-                src={photoPreview || undefined}
-                alt={formData.name}
-                className="h-32 w-32 border-4 border-orange-500 shadow-lg"
-              />
-              {photoFile && (
-                <div className="absolute -top-2 -right-2">
-                  <div className="bg-green-500 text-white rounded-full p-1">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </div>
-                </div>
-              )}
-            </div>
-            <Label
-              htmlFor="photo"
-              className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-            >
-              <Upload className="h-4 w-4" />
-              {photoFile ? "Alterar Foto" : "Escolher Foto"}
-            </Label>
-            <input
-              id="photo"
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="hidden"
+          </h2>
+        </div>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <Avatar
+              src={photoPreview || undefined}
+              alt={formData.name}
+              className="h-32 w-32 border-4 border-orange-500 shadow-lg"
             />
             {photoFile && (
-              <p className="text-sm text-green-500 font-medium">
-                Nova foto selecionada!
-              </p>
+              <div className="absolute -top-2 -right-2">
+                <div className="bg-green-500 text-white rounded-full p-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+              </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+          <Label
+            htmlFor="photo"
+            className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+          >
+            <Upload className="h-4 w-4" />
+            {photoFile ? "Alterar Foto" : "Escolher Foto"}
+          </Label>
+          <input
+            id="photo"
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          {photoFile && (
+            <p className="text-sm text-green-500 font-medium">
+              Nova foto selecionada!
+            </p>
+          )}
+        </div>
+      </ModernCard>
 
       {/* Personal Information */}
-      <Card className={cardClass}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-orange-500" />
-            Informações Pessoais
-          </CardTitle>
-          <CardDescription className={isDark ? "text-neutral-400" : "text-gray-600"}>
-            Dados básicos do seu perfil
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <ModernCard className="mb-6 p-6 sm:p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-lg">
+            <User className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-400 dark:to-orange-500 bg-clip-text text-transparent">
+              Informações Pessoais
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Dados básicos do seu perfil
+            </p>
+          </div>
+        </div>
+        <div className="space-y-6">
           {/* Nome Completo - Largura Total */}
           <div className="space-y-3">
             <Label htmlFor="name" className="text-sm font-semibold flex items-center gap-2 mb-2">
@@ -254,14 +252,14 @@ export default function ProfileEditForm({
               id="name"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className={`${inputClass} h-12`}
+              className={`${inputClass} h-12 rounded-xl`}
               placeholder="Digite seu nome completo"
               required
             />
           </div>
 
           {/* Data de Nascimento e Gênero */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label htmlFor="birthdate" className="text-sm font-semibold flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4 text-orange-500" />
@@ -272,12 +270,12 @@ export default function ProfileEditForm({
                 type="date"
                 value={formData.birthdate}
                 onChange={(e) => handleChange("birthdate", e.target.value)}
-                className={`${inputClass} h-12`}
+                className={`${inputClass} h-12 rounded-xl`}
                 required
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-3">
               <Label htmlFor="gender" className="text-sm font-semibold flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-orange-500" />
                 Gênero *
@@ -286,7 +284,7 @@ export default function ProfileEditForm({
                 id="gender"
                 value={formData.gender}
                 onChange={(e) => handleChange("gender", e.target.value)}
-                className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer`}
+                className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer w-full`}
                 required
               >
                 {Object.entries(genderTypeLabels).map(([key, label]) => (
@@ -308,7 +306,7 @@ export default function ProfileEditForm({
               id="maritalStatus"
               value={formData.maritalStatus}
               onChange={(e) => handleChange("maritalStatus", e.target.value)}
-              className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer`}
+              className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer w-full`}
               required
             >
               {Object.entries(maritalStatusTypeLabels).map(([key, label]) => (
@@ -318,21 +316,25 @@ export default function ProfileEditForm({
               ))}
             </select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ModernCard>
 
       {/* Contact Information */}
-      <Card className={cardClass}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-orange-500" />
-            Informações de Contato
-          </CardTitle>
-          <CardDescription className={isDark ? "text-neutral-400" : "text-gray-600"}>
-            Como podemos entrar em contato com você
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <ModernCard className="mb-6 p-6 sm:p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-lg">
+            <Mail className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-400 dark:to-orange-500 bg-clip-text text-transparent">
+              Informações de Contato
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Como entrar em contato com você
+            </p>
+          </div>
+        </div>
+        <div className="space-y-6">
           {/* Email - Largura Total */}
           <div className="space-y-3">
             <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2 mb-2">
@@ -344,14 +346,14 @@ export default function ProfileEditForm({
               type="email"
               value={formData.personalContactEmail}
               onChange={(e) => handleChange("personalContactEmail", e.target.value)}
-              className={`${inputClass} h-12`}
+              className={`${inputClass} h-12 rounded-xl`}
               placeholder="seu@email.com"
               required
             />
           </div>
 
           {/* Telefone e Documento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label htmlFor="phone" className="text-sm font-semibold flex items-center gap-2 mb-2">
                 <Phone className="h-4 w-4 text-orange-500" />
@@ -362,7 +364,7 @@ export default function ProfileEditForm({
                 type="tel"
                 value={formData.phoneNumber}
                 onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                className={`${inputClass} h-12`}
+                className={`${inputClass} h-12 rounded-xl`}
                 placeholder="(00) 00000-0000"
               />
             </div>
@@ -376,26 +378,30 @@ export default function ProfileEditForm({
                 id="document"
                 value={formData.documentNumber}
                 onChange={(e) => handleChange("documentNumber", e.target.value)}
-                className={`${inputClass} h-12`}
+                className={`${inputClass} h-12 rounded-xl`}
                 placeholder="000.000.000-00"
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ModernCard>
 
       {/* Church Information */}
-      <Card className={cardClass}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Church className="h-5 w-5 text-orange-500" />
-            Informações da Igreja
-          </CardTitle>
-          <CardDescription className={isDark ? "text-neutral-400" : "text-gray-600"}>
-            Informações relacionadas à sua participação na comunidade
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <ModernCard className="mb-6 p-6 sm:p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-lg">
+            <Church className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-400 dark:to-orange-500 bg-clip-text text-transparent">
+              Informações da Igreja
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Dados relacionados à sua igreja
+            </p>
+          </div>
+        </div>
+        <div className="space-y-6">
           {/* Igreja - Largura Total */}
           <div className="space-y-3">
             <Label htmlFor="church" className="text-sm font-semibold flex items-center gap-2 mb-2">
@@ -406,14 +412,14 @@ export default function ProfileEditForm({
               id="church"
               value={formData.church}
               onChange={(e) => handleChange("church", e.target.value)}
-              className={`${inputClass} h-12`}
+              className={`${inputClass} h-12 rounded-xl`}
               placeholder="Nome da sua igreja"
               required
             />
           </div>
 
           {/* Tamanho de Roupa e Voz Coral */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label htmlFor="clothingSize" className="text-sm font-semibold flex items-center gap-2 mb-2">
                 <Shirt className="h-4 w-4 text-orange-500" />
@@ -423,12 +429,12 @@ export default function ProfileEditForm({
                 id="clothingSize"
                 value={formData.clothingSize}
                 onChange={(e) => handleChange("clothingSize", e.target.value)}
-                className={`${inputClass} h-12`}
+                className={`${inputClass} h-12 rounded-xl`}
                 placeholder="Ex: P, M, G, GG"
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-3">
               <Label htmlFor="choralVoice" className="text-sm font-semibold flex items-center gap-2 mb-2">
                 <Music className="h-4 w-4 text-orange-500" />
                 Voz Coral
@@ -437,7 +443,7 @@ export default function ProfileEditForm({
                 id="choralVoice"
                 value={formData.choralVoiceType}
                 onChange={(e) => handleChange("choralVoiceType", e.target.value)}
-                className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer`}
+                className={`${selectClass} h-12 rounded-xl px-4 py-3 cursor-pointer w-full`}
               >
                 {Object.entries(choralVoiceTypeLabels).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -447,43 +453,46 @@ export default function ProfileEditForm({
               </select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ModernCard>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Salvando alterações...
-            </div>
-          ) : (
-            <>
-              <CheckCircle2 className="h-5 w-5 mr-2" />
-              Salvar Alterações
-            </>
-          )}
-        </Button>
-        
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel || (() => router.push("/profile"))}
-          disabled={isLoading}
-          className={`flex-1 h-12 font-medium transition-all duration-200 ${
-            isDark 
-              ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-600 hover:border-neutral-500" 
-              : "bg-white hover:bg-gray-50 text-gray-900 border-gray-300 hover:border-gray-400"
-          }`}
-        >
-          Cancelar
-        </Button>
-      </div>
-    </form>
+        {/* Action Buttons */}
+        <div className="sticky bottom-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 p-6 -mx-6 sm:-mx-8 lg:-mx-10 mt-8">
+          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto sm:max-w-none">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl rounded-xl"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Salvando alterações...
+                </div>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Salvar Alterações
+                </>
+              )}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel || (() => router.push("/profile"))}
+              disabled={isLoading}
+              className={`flex-1 h-12 font-medium transition-all duration-200 rounded-xl ${
+                isDark 
+                  ? "bg-slate-800/50 hover:bg-slate-700/50 text-slate-200 border-slate-600 hover:border-slate-500" 
+                  : "bg-white hover:bg-gray-50 text-gray-900 border-gray-300 hover:border-gray-400"
+              }`}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }

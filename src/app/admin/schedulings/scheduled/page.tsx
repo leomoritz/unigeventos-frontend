@@ -3,9 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar, Bell, Gift, BarChart3 } from "lucide-react";
 import { toast } from "react-toastify";
 import { getUserNotifications, subscribeToNotification, unsubscribeFromNotification } from "@/services/schedulingService";
+import PageHeader from "@/components/admin/PageHeader";
+import ModernCard from "@/components/admin/ModernCard";
+import ModernCardLoading from "@/components/admin/ModernCardLoading";
 
 const NOTIFICATIONS = [
   {
@@ -86,55 +89,144 @@ export default function ScheduledPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+      <div className="min-h-screen w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          <PageHeader
+            icon={<Calendar className="h-8 w-8" />}
+            title="Agendamentos"
+            description="Carregando agendamentos disponíveis..."
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ModernCardLoading count={2} />
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Helper function to get notification icon
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "BIRTHDAY_REMINDER":
+        return <Gift className="h-6 w-6 text-orange-400" />;
+      case "EVENT_STATISTICS":
+        return <BarChart3 className="h-6 w-6 text-orange-400" />;
+      default:
+        return <Bell className="h-6 w-6 text-orange-400" />;
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
-      <h1 className="text-2xl font-bold text-orange-600 mb-4">
-        Agendamentos disponíveis
-      </h1>
+    <div className="min-h-screen w-full">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Header Section */}
+        <PageHeader
+          icon={<Calendar className="h-8 w-8" />}
+          title="Agendamentos"
+          description="Configure suas notificações automáticas e lembretes personalizados"
+        />
 
-      {NOTIFICATIONS.map((notif) => {
-        const subscribed = isSubscribed(notif.type);
+        {/* Notifications Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {NOTIFICATIONS.map((notif) => {
+            const subscribed = isSubscribed(notif.type);
 
-        return (
-          <div
-            key={notif.type}
-            className="p-4 bg-gradient-to-br from-[#222222] via-[#2b2b2b] to-[#1e1e1e] text-white border border-neutral-700 shadow-md"
-          >
-            <h2 className="flex gap-2 items-center justify-between text-xl font-semibold text-orange-300">
-              {notif.name}
-            </h2>
-            <p className="text-sm text-neutral-300 mb-4 mt-2">{notif.description}</p>
+            return (
+              <ModernCard
+                key={notif.type}
+                className="group p-6 text-white hover:border-orange-500/50 transition-all duration-300"
+              >
+                <div className="space-y-4">
+                  {/* Header with Icon and Status */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 p-2 bg-orange-600/20 rounded-lg backdrop-blur-sm">
+                        {getNotificationIcon(notif.type)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-xl font-semibold text-orange-300 group-hover:text-orange-400 transition-colors">
+                          {notif.name}
+                        </h2>
+                      </div>
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
+                      subscribed 
+                        ? "bg-green-600/20 text-green-400 border border-green-600/50" 
+                        : "bg-slate-600/20 text-slate-400 border border-slate-600/50"
+                    }`}>
+                      <div className={`w-2 h-2 rounded-full ${subscribed ? "bg-green-400" : "bg-slate-400"}`} />
+                      {subscribed ? "Ativo" : "Inativo"}
+                    </div>
+                  </div>
 
-            <Button
-          onClick={() =>
-            subscribed
-              ? handleUnsubscribe(notif.type)
-              : handleSubscribe(notif.type)
-          }
-          disabled={updating === notif.type}
-          className={`w-full sm:w-auto font-semibold px-4 py-2 rounded-md transition-colors duration-300 shadow-md ${
-            subscribed
-              ? "bg-[#f5f5f4] text-[#1c1917] hover:bg-[#e7e5e4]"
-              : "bg-gradient-to-r from-[#ea580c] to-[#dc2626] text-white hover:from-[#c2410c] hover:to-[#b91c1c]"
-          }`}
-        >
-          {updating === notif.type ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : subscribed ? (
-            "Desativar"
-          ) : (
-            "Inscrever-se"
-          )}
-        </Button>
+                  {/* Description */}
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    {notif.description}
+                  </p>
+
+                  {/* Action Button */}
+                  <div className="pt-4 border-t border-slate-600/50">
+                    <Button
+                      onClick={() =>
+                        subscribed
+                          ? handleUnsubscribe(notif.type)
+                          : handleSubscribe(notif.type)
+                      }
+                      disabled={updating === notif.type}
+                      className={`w-full font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-lg ${
+                        subscribed
+                          ? "bg-slate-700/50 text-slate-300 hover:bg-slate-600/70 border border-slate-600/50 hover:border-slate-500"
+                          : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
+                      }`}
+                    >
+                      {updating === notif.type ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Processando...</span>
+                        </div>
+                      ) : subscribed ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Bell className="h-4 w-4" />
+                          <span>Desativar Notificações</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Bell className="h-4 w-4" />
+                          <span>Ativar Notificações</span>
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </ModernCard>
+            );
+          })}
+        </div>
+
+        {/* Info Card */}
+        <ModernCard className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 p-2 bg-blue-600/20 rounded-lg backdrop-blur-sm">
+              <Bell className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-blue-300">
+                Sobre os Agendamentos
+              </h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Os agendamentos permitem que você receba notificações automáticas por e-mail sobre eventos importantes. 
+                Você pode ativar ou desativar cada tipo de notificação conforme sua necessidade.
+              </p>
+              <div className="pt-2 text-xs text-slate-400">
+                <p>• <strong>Lembrete de Aniversários:</strong> Receba lembretes diários sobre aniversariantes</p>
+                <p>• <strong>Estatísticas de Eventos:</strong> Receba resumos automáticos após eventos concluídos</p>
+              </div>
+            </div>
           </div>
-        );
-      })}
+        </ModernCard>
+      </div>
     </div>
   );
 }

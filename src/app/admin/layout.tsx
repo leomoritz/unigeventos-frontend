@@ -2,6 +2,7 @@
 
 import { ReactNode, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Home,
   Calendar,
@@ -17,6 +18,8 @@ import {
   LucideCalendarCheck,
   UserIcon,
   CalendarSearchIcon,
+  X,
+  LogOut,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -32,22 +35,62 @@ import { useLogout } from "@/hooks/useLogout";
 import useAuth from "@/hooks/useAuth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const [isSidebarOpen, setSidebarOpen] = useState(false); // Controle do estado do menu lateral
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { performLogout } = useLogout();
   const { hasRole } = useAuth();
 
   return (
-    <div className="min-h-screen flex bg-[#1e1e1e] text-neutral-200">
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-neutral-100">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`w-64 bg-[#2b2b2b] border-r border-[#333] shadow-sm p-6 hidden md:block ${
-          isSidebarOpen ? "block" : "hidden md:block"
+        className={`fixed md:static w-72 h-screen bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700/50 shadow-2xl backdrop-blur-xl z-50 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <h2 className="text-2xl font-bold text-orange-500 mb-8">
-          Painel Admin
-        </h2>
-        <nav className="space-y-4">
+        {/* Close button for mobile */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="absolute top-4 right-4 md:hidden text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Logo and Title */}
+        <div className="p-6 border-b border-slate-700/50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 p-1 shadow-lg">
+              <Image
+                src="/servinho.png"
+                alt="Servinho Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain rounded-lg"
+              />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                Admin Panel
+              </h2>
+              <p className="text-xs text-slate-400">UniEventos</p>
+            </div>
+          </div>
+          
+          {/* Weather Widget */}
+          <div className="mt-3">
+            <WeatherWidget />
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="p-6 space-y-2 flex-1 overflow-y-auto">
           <NavItem href="/admin" icon={<Home size={18} />}>
             Dashboard
           </NavItem>
@@ -56,9 +99,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </NavItem>
           <NavItem href="/admin/events" icon={<Calendar size={18} />}>
             Eventos
-          </NavItem>
-          <NavItem href="/events" icon={<CalendarSearchIcon size={18} />}>
-            Eventos Publicados
           </NavItem>
           <NavItem href="/admin/payments" icon={<CreditCard size={18} />}>
             Pagamentos
@@ -88,145 +128,86 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        <header className="bg-[#2b2b2b] px-6 py-4 flex items-center justify-between border-b border-[#333]">
-          <WeatherWidget />
-
-          {/* User Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="rounded-full hover:opacity-90 transition">
-                <Avatar
-                  className="h-9 w-9 border border-neutral-600"
-                  src="{user?.imageUrl}"
-                  alt="{user?.name}"
-                />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-[#2b2b2b] text-neutral-200 border border-[#444]">
-              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#444]" />
-              <DropdownMenuItem asChild>
-                <Link href="/admin/profile">Meu Perfil</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin/edit-profile">Editar Dados</Link>
-              </DropdownMenuItem>
-              {(hasRole("ROLE_USER") || hasRole("ROLE_LEADER")) && (
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/user/dashboard"
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 focus:text-blue-700"
-                  >
-                    <UserIcon size={16} />
-                    <span>Painel do Usuário</span>
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator className="bg-[#444]" />
-              <DropdownMenuItem
-                className="text-red-500 hover:text-red-600 cursor-pointer"
-                onClick={performLogout}
-              >
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Hamburger Menu for Mobile */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4 sticky top-0 z-30">
+          <div className="flex items-center justify-between">
+            {/* Left Side - Mobile menu + Action Buttons */}
+            <div className="flex items-center gap-3">
               <button
-                className="md:hidden text-white"
-                onClick={() => setSidebarOpen(!isSidebarOpen)}
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
-                <Menu className="ml-2" size={16} /> {/* Ícone de hambúrguer */}
+                <Menu size={20} className="text-slate-300" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-[#2b2b2b] text-neutral-200 border border-[#444]">
-              <DropdownMenuLabel className="font-bold text-orange-500 mb-8">
-                Painel Admin
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#444]" />
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin"
-                >
-                  {<Home size={14} />} Dashboard
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/organizers"
-                >
-                  {<Church size={14} />} Organizadores
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/events"
-                >
-                  {<Calendar size={14} />} Eventos
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/payments"
-                >
-                  {<CreditCard size={14} />} Pagamentos
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/coupons"
-                >
-                  {<TicketPercent size={14} />} Cupons
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/schedulings"
-                >
-                  {<CalendarClock size={14} />} Agendamentos
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/persons"
-                >
-                  {<Users size={14} />} Pessoas
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/checkins"
-                >
-                  {<CheckCircleIcon size={14} />} Checkins
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  className="flex items-center justify-start gap-2"
-                  href="/admin/configurations"
-                >
-                  {<Settings size={14} />} Configurações
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              
+              <Link
+                href="/events"
+                target="_blank"
+                className="group flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-orange-500/25 hover:scale-105"
+              >
+                <CalendarSearchIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                <span className="hidden sm:inline">Eventos Publicados</span>
+                <span className="sm:hidden">Eventos</span>
+              </Link>
+            </div>
+
+            {/* Right Side - User Menu */}
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 p-2 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-all duration-200 border border-slate-600/30">
+                    <Avatar
+                      className="h-8 w-8 border-2 border-orange-500/30 shadow-lg"
+                      src="{user?.imageUrl}"
+                      alt="{user?.name}"
+                    />
+                    <span className="hidden sm:block text-sm font-medium text-slate-300">Admin</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-slate-800/95 backdrop-blur-xl text-slate-100 border border-slate-700/50 shadow-2xl">
+                  <DropdownMenuLabel className="text-slate-300">Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700/50" />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/profile" className="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50">
+                      <UserIcon size={16} />
+                      Meu Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/edit-profile" className="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50">
+                      <Settings size={16} />
+                      Editar Dados
+                    </Link>
+                  </DropdownMenuItem>
+                  {(hasRole("ROLE_USER") || hasRole("ROLE_LEADER")) && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/user/dashboard"
+                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50 text-blue-400 hover:text-blue-300"
+                      >
+                        <UserIcon size={16} />
+                        Painel do Usuário
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator className="bg-slate-700/50" />
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+                    onClick={performLogout}
+                  >
+                    <LogOut size={16} />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </header>
 
         {/* Main Area */}
-        <main className="flex-1 p-6 bg-gradient-to-br bg-[#2b2b2b] overflow-y-auto h-screen">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6">
+        <main className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 overflow-y-auto">
+          <div className="max-w-7xl mx-auto p-6">
             {children}
           </div>
         </main>
@@ -247,9 +228,11 @@ function NavItem({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 text-neutral-300 hover:text-orange-400 transition-colors font-medium"
+      className="group flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-gradient-to-r hover:from-orange-500/20 hover:to-red-500/20 transition-all duration-200 font-medium border border-transparent hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/10"
     >
-      {icon}
+      <span className="group-hover:scale-110 transition-transform duration-200">
+        {icon}
+      </span>
       {children}
     </Link>
   );

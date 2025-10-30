@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ModernCard from "@/components/admin/ModernCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, CheckCircle2, XCircle, Lock, Shield } from "lucide-react";
 import { changePassword, validatePassword } from "@/services/settingsService";
 
 interface PasswordResetSectionProps {
@@ -31,13 +31,9 @@ export default function PasswordResetSection({
 
   const isDark = theme === "dark";
   
-  const cardClass = isDark
-    ? "bg-[#2b2b2b] border-[#444] text-neutral-200"
-    : "bg-white border-gray-200 text-gray-900";
-  
   const inputClass = isDark
-    ? "bg-[#1e1e1e] border-[#444] text-neutral-200"
-    : "bg-white border-gray-300 text-gray-900";
+    ? "bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20"
+    : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,31 +94,40 @@ export default function PasswordResetSection({
   };
 
   return (
-    <Card className={cardClass}>
-      <CardHeader>
-        <CardTitle className="text-xl">Alterar Senha</CardTitle>
-        <CardDescription className={isDark ? "text-neutral-400" : "text-gray-600"}>
-          Atualize sua senha para manter sua conta segura
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <ModernCard className="p-6">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 p-2 bg-orange-600/20 rounded-lg">
+            <Lock className="h-5 w-5 text-orange-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-orange-400 mb-1">Alterar Senha</h3>
+            <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+              Atualize sua senha para manter sua conta segura
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/50 text-red-500">
-              <XCircle size={18} />
-              <p className="text-sm">{error}</p>
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 backdrop-blur-sm">
+              <XCircle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-green-500/10 border border-green-500/50 text-green-500">
-              <CheckCircle2 size={18} />
-              <p className="text-sm">{success}</p>
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 backdrop-blur-sm">
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm font-medium">{success}</p>
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">Senha Atual</Label>
+          <div className="space-y-3">
+            <Label htmlFor="currentPassword" className={`text-sm font-medium ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+              Senha Atual
+            </Label>
             <div className="relative">
               <Input
                 id="currentPassword"
@@ -136,15 +141,22 @@ export default function PasswordResetSection({
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                  isDark 
+                    ? "text-slate-400 hover:text-slate-200" 
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                disabled={isLoading}
               >
-                {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">Nova Senha</Label>
+          <div className="space-y-3">
+            <Label htmlFor="newPassword" className={`text-sm font-medium ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+              Nova Senha
+            </Label>
             <div className="relative">
               <Input
                 id="newPassword"
@@ -158,18 +170,28 @@ export default function PasswordResetSection({
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                  isDark 
+                    ? "text-slate-400 hover:text-slate-200" 
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                disabled={isLoading}
               >
-                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <p className={`text-xs ${isDark ? "text-neutral-400" : "text-gray-600"}`}>
-              Mínimo 8 caracteres, incluindo maiúsculas, minúsculas e números
-            </p>
+            <div className={`flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20`}>
+              <Shield className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+              <p className={`text-xs ${isDark ? "text-blue-300" : "text-blue-600"}`}>
+                Mínimo 8 caracteres, incluindo maiúsculas, minúsculas e números
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+          <div className="space-y-3">
+            <Label htmlFor="confirmPassword" className={`text-sm font-medium ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+              Confirmar Nova Senha
+            </Label>
             <div className="relative">
               <Input
                 id="confirmPassword"
@@ -183,29 +205,39 @@ export default function PasswordResetSection({
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                  isDark 
+                    ? "text-slate-400 hover:text-slate-200" 
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                disabled={isLoading}
               >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Alterando...
-              </div>
-            ) : (
-              "Alterar Senha"
-            )}
-          </Button>
+          <div className="pt-2">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium py-2.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Alterando senha...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <span>Alterar Senha</span>
+                </div>
+              )}
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </ModernCard>
   );
 }
