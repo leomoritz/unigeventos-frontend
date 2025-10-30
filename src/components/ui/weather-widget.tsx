@@ -13,8 +13,17 @@ type Weather = {
 
 export default function WeatherWidget() {
   const [weather, setWeather] = useState<Weather | null>(null);
+  const localStorageKey = 'unigeventos_weather_cache';
 
   useEffect(() => {
+    const cachedData = localStorage.getItem(localStorageKey);
+    const iconMap: { [key: string]: React.ReactNode } = {
+      'céu limpo': <Sun className="text-yellow-400" size={20} />,
+      'chuva leve': <CloudRain className="text-blue-400" size={20} />,
+      'chuva': <CloudRain className="text-blue-500" size={20} />,
+      'nublado': <Cloud className="text-gray-400" size={20} />,
+      'neve': <CloudSnow className="text-blue-300" size={20} />,
+    };
     const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 
     if (!apiKey) {
@@ -23,6 +32,13 @@ export default function WeatherWidget() {
     }
 
     navigator.geolocation.getCurrentPosition(async (position) => {
+      if (cachedData) {
+        const cached = JSON.parse(cachedData);
+        const icon = iconMap[cached.description?.toLowerCase()] ?? <Thermometer size={20} />;
+        setWeather({ temp: cached.temp, description: cached.description, icon });
+        return;
+      }
+
       const { latitude, longitude } = position.coords;
 
       const res = await fetch(
@@ -32,17 +48,10 @@ export default function WeatherWidget() {
 
       const temp = Math.round(data?.main?.temp);
       const description = data?.weather[0]?.description;
+      const icon = iconMap[description?.toLowerCase()] ?? <Thermometer size={20} />;
 
-      const iconMap: { [key: string]: React.ReactNode } = {
-        'céu limpo': <Sun className="text-yellow-400" size={20} />,
-        'chuva leve': <CloudRain className="text-blue-400" size={20} />,
-        'chuva': <CloudRain className="text-blue-500" size={20} />,
-        'nublado': <Cloud className="text-gray-400" size={20} />,
-        'neve': <CloudSnow className="text-blue-300" size={20} />,
-      };
-
-      const icon = iconMap[description.toLowerCase()] ?? <Thermometer size={20} />;
-
+      // Salva apenas temp e description no cache
+      localStorage.setItem(localStorageKey, JSON.stringify({ temp, description }));
       setWeather({ temp, description, icon });
     });
   }, []);

@@ -14,12 +14,14 @@ import { useAuth } from '@/hooks/useAuth';
 export default function EventsPage() {
   const [events, setEvents] = useState<EventDataResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // usado para buscar
+  const [searchInput, setSearchInput] = useState(''); // usado para digitação
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { hasRole } = useAuth();
   const { redirectToRegister, isAuthenticated, isLoading: authLoading, isCheckingRegistration } = useAuth();
 
   const pageSize = 9; // 3x3 grid
@@ -177,12 +179,13 @@ export default function EventsPage() {
   };
 
   useEffect(() => {
-    fetchEvents(0, searchTerm);
+    fetchEvents(0, '');
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchEvents(0, searchTerm);
+    fetchEvents(0, searchInput);
+    setSearchTerm(searchInput); // opcional, apenas para exibir o termo atual
   };
 
   const handleRegister = (eventId: string) => {
@@ -191,7 +194,7 @@ export default function EventsPage() {
   };
 
   const handlePageChange = (newPage: number) => {
-    fetchEvents(newPage, searchTerm);
+    fetchEvents(newPage, searchInput);
   };
 
   return (
@@ -267,7 +270,7 @@ export default function EventsPage() {
             Conecte-se com experiências transformadoras e momentos especiais de nossa comunidade
           </motion.p>
 
-          {/* Welcome Message for Authenticated Users */}
+          {/* Welcome Message for Authenticated Users 
           {!authLoading && isAuthenticated && (
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -304,7 +307,7 @@ export default function EventsPage() {
                 </div>
               </div>
             </motion.div>
-          )}
+          )}*/}
           
           {/* Status de Autenticação */}
           {!authLoading && (
@@ -317,7 +320,7 @@ export default function EventsPage() {
               {isAuthenticated ? (
                 <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm border border-green-200 font-medium">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  ✨ Modo Conectado - Pronto para se inscrever!
+                  ✨ Você Está Conectado - Pronto para se inscrever!
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm border border-blue-200">
@@ -337,36 +340,38 @@ export default function EventsPage() {
             transition={{ duration: 0.6, delay: 0.8 }}
           >
             <motion.div 
-              className="relative group"
+              className="flex items-center group relative"
               whileHover={{ scale: 1.02 }}
               whileFocus={{ scale: 1.02 }}
               transition={{ duration: 0.2 }}
             >
-              <motion.div
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                animate={{ x: [0, 2, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
+              <span className="text-gray-400 absolute left-3 pointer-events-none">
                 <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-              </motion.div>
+              </span>
               <Input
                 type="text"
                 placeholder="Buscar eventos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10 pr-16 sm:pr-20 py-2.5 sm:py-3 w-full bg-white/80 backdrop-blur-sm border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 rounded-lg text-sm sm:text-base transition-all duration-300 hover:bg-white focus:bg-white group-hover:shadow-lg"
+                style={{ minHeight: '44px' }}
               />
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <div
+                className="absolute right-2"
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
               >
                 <Button
+                  // ao clicar, rola para o evento encontrado
+                  onClick={() => {
+                    document.getElementById('events-grid')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-2.5 sm:px-3 md:px-4 py-1.5 rounded-md transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-2.5 sm:px-3 md:px-4 py-1.5 rounded-md transition-all duration-300 shadow-md hover:shadow-lg"
+                  style={{ minHeight: '36px' }}
                 >
                   <Search className="h-4 w-4" />
                 </Button>
-              </motion.div>
+              </div>
             </motion.div>
           </motion.form>
         </div>
@@ -507,7 +512,7 @@ export default function EventsPage() {
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
               <Button
-                onClick={() => router.push('/user/dashboard')}
+                onClick={() => router.push('/user/subscriptions')}
                 variant="outline"
                 size="sm"
                 className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
@@ -515,6 +520,7 @@ export default function EventsPage() {
                 <User className="h-4 w-4 mr-2" />
                 Minhas Inscrições
               </Button>
+              {hasRole('ROLE_ADMIN') && (
               <Button
                 onClick={() => router.push('/admin/dashboard')}
                 variant="outline"
@@ -524,6 +530,7 @@ export default function EventsPage() {
                 <Calendar className="h-4 w-4 mr-2" />
                 Dashboard Admin
               </Button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -533,6 +540,7 @@ export default function EventsPage() {
       <AnimatePresence>
         {!loading && !error && safeEvents.length > 0 && (
           <motion.div 
+            id="events-grid"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 w-full max-w-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -582,6 +590,7 @@ export default function EventsPage() {
           {searchTerm && (
             <Button
               onClick={() => {
+                setSearchInput('');
                 setSearchTerm('');
                 fetchEvents(0, '');
               }}

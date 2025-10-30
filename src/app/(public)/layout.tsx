@@ -3,21 +3,16 @@
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, Calendar, Home } from 'lucide-react';
+import { User, LogOut, Calendar, Home, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLogout } from '@/hooks/useLogout';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/events');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
-  };
+  const { hasRole } = useAuth();
+  const { performLogout } = useLogout();
+  
 
   const handleGoToDashboard = () => {
     router.push('/admin/dashboard');
@@ -43,22 +38,28 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 className="rounded-full"
               />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  UniEventos
-                </h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Conectando Gerações</p>
+                <h1 className="text-xl font-bold text-gray-900">UniEventos</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">
+                  Conectando Gerações
+                </p>
               </div>
             </div>
 
             {/* Navigation */}
             <nav className="flex items-center space-x-2 sm:space-x-4">
-              <a
-                href="/events"
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('events-grid');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 className="text-gray-600 hover:text-orange-600 transition-colors duration-200 font-medium px-3 py-2 rounded-lg hover:bg-orange-50 text-sm sm:text-base"
               >
                 Eventos
-              </a>
-              
+              </button>
+
               {/* Loading State */}
               {isLoading ? (
                 <div className="flex items-center space-x-2">
@@ -77,19 +78,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     <User className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Minha Área</span>
                   </Button>
-                  
+
+                  {hasRole("ROLE_ADMIN") && (
+                    <Button
+                      onClick={handleGoToDashboard}
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm"
+                    >
+                      <Shield className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Painel Admin</span>
+                    </Button>
+                  )}
+
                   <Button
-                    onClick={handleGoToDashboard}
-                    variant="outline"
-                    size="sm" 
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm"
-                  >
-                    <Home className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Dashboard</span>
-                  </Button>
-                  
-                  <Button
-                    onClick={handleLogout}
+                    onClick={performLogout}
                     variant="outline"
                     size="sm"
                     className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 text-xs sm:text-sm"
@@ -122,9 +125,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* Main Content */}
       <main className="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 w-full max-w-full overflow-x-hidden">
-        <div className="max-w-7xl mx-auto w-full">
-          {children}
-        </div>
+        <div id="main-content" className="max-w-7xl mx-auto w-full">{children}</div>
       </main>
 
       {/* Clean Footer */}

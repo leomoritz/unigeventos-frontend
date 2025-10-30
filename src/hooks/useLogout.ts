@@ -1,10 +1,11 @@
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { logout } from "@/services/authService";
 import { toast } from "react-toastify";
 import CookieManager from "@/lib/cookieManager";
 
 export const useLogout = () => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const performLogout = async () => {
     try {
@@ -27,9 +28,14 @@ export const useLogout = () => {
       
       // Aguardar um momento para o toast aparecer antes de redirecionar
       setTimeout(() => {
+        // Se já estiver na página de eventos, apenas recarregar
+          if (pathname === "/events" || pathname === "/") {
+            window.location.reload();
+          return;
+        }
         // Redirecionar para a página inicial
         router.push("/");
-      }, 1000);
+      }, 200);
 
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
@@ -42,7 +48,7 @@ export const useLogout = () => {
       toast.error("Erro ao fazer logout, mas você foi desconectado localmente");
       
       setTimeout(() => {
-        router.push("/");
+        router.push("/events");
       }, 1500);
     }
   };

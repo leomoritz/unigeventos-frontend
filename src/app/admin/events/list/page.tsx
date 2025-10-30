@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
-  UserCheck
+  UserCheck,
+  CalendarSearchIcon
 } from "lucide-react";
 import {
   EventDataResponse,

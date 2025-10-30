@@ -12,7 +12,7 @@ export const getPublicEvents = async (
 ): Promise<EventDataResponse[]> => {
   try {
     const response = await axios.get(
-      `${API_URL}/queries/public/published-events?page=${page}&size=${size}&search=${encodeURIComponent(searchTerm)}`,
+      `${API_URL}/queries/public/published-events?page=${page}&size=${size}&searchTerms=${encodeURIComponent(searchTerm)}`,
       {
         headers: {
           'Content-Type': 'application/json',

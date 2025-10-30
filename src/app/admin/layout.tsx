@@ -15,6 +15,8 @@ import {
   CheckCircleIcon,
   SubscriptIcon,
   LucideCalendarCheck,
+  UserIcon,
+  CalendarSearchIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -27,10 +29,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import WeatherWidget from "@/components/ui/weather-widget";
 import { useLogout } from "@/hooks/useLogout";
+import useAuth from "@/hooks/useAuth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false); // Controle do estado do menu lateral
   const { performLogout } = useLogout();
+  const { hasRole } = useAuth();
 
   return (
     <div className="min-h-screen flex bg-[#1e1e1e] text-neutral-200">
@@ -53,6 +57,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <NavItem href="/admin/events" icon={<Calendar size={18} />}>
             Eventos
           </NavItem>
+          <NavItem href="/events" icon={<CalendarSearchIcon size={18} />}>
+            Eventos Publicados
+          </NavItem>
           <NavItem href="/admin/payments" icon={<CreditCard size={18} />}>
             Pagamentos
           </NavItem>
@@ -68,7 +75,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <NavItem href="/admin/checkins" icon={<CheckCircleIcon size={18} />}>
             Checkins
           </NavItem>
-          <NavItem href="/admin/subscriptions" icon={<LucideCalendarCheck size={18} />}>
+          <NavItem
+            href="/admin/subscriptions"
+            icon={<LucideCalendarCheck size={18} />}
+          >
             Inscrições por Evento
           </NavItem>
           <NavItem href="/admin/configurations" icon={<Settings size={18} />}>
@@ -102,8 +112,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <DropdownMenuItem asChild>
                 <Link href="/admin/edit-profile">Editar Dados</Link>
               </DropdownMenuItem>
+              {(hasRole("ROLE_USER") || hasRole("ROLE_LEADER")) && (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/user/dashboard"
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 focus:text-blue-700"
+                  >
+                    <UserIcon size={16} />
+                    <span>Painel do Usuário</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator className="bg-[#444]" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-500 hover:text-red-600 cursor-pointer"
                 onClick={performLogout}
               >
