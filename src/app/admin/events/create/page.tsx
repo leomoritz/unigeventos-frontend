@@ -8,9 +8,8 @@ import { getAll, OrganizerResponse } from "@/services/organizersService";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import Link from "next/link";
-import { ArrowLeft, Calendar, Plus, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, Loader2 } from "lucide-react";
+import PageHeader from "@/components/admin/PageHeader";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -55,52 +54,33 @@ export default function CreateEventPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-orange-400">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Carregando organizadores...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex items-center gap-2 text-orange-400">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Carregando organizadores...</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin/events/list">
-            <Button className="bg-neutral-800 hover:bg-neutral-700 text-orange-400 border border-neutral-600 p-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-600/20 rounded-lg">
-              <Plus className="h-8 w-8 text-orange-400" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-orange-400">Novo Evento</h1>
-              <p className="text-neutral-400 text-sm">
-                Crie um novo evento preenchendo as informações abaixo
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
+        {/* Page Header */}
+        <PageHeader
+          title="Novo Evento"
+          description="Crie um novo evento preenchendo as informações em etapas"
+          icon={<Calendar className="h-6 w-6" />}
+          backHref="/admin/events/list"
+        />
 
         {/* Form */}
-        <EventForm onSubmit={handleSubmit} organizers={organizers} />
-
-        {/* Help Text */}
-        <div className="text-center text-sm text-neutral-400">
-          <p>
-            Preencha todos os campos obrigatórios para criar o evento.{" "}
-            <Link 
-              href="/admin/events/list" 
-              className="text-orange-400 hover:text-orange-300 underline"
-            >
-              Voltar para a lista de eventos
-            </Link>
-          </p>
+        <div className="mt-6 md:mt-8">
+          <EventForm onSubmit={handleSubmit} organizers={organizers} />
         </div>
       </div>
     </div>

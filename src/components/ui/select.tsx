@@ -25,18 +25,19 @@ export const Select: React.FC<SelectProps> = ({ options, value, defaultValue, on
       value={value ?? defaultValue}
       onChange={(e) => onChange(e.target.value)}
       className={`
-        flex h-10 w-full rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white 
-        placeholder-neutral-400 ring-offset-background file:border-0 file:bg-transparent file:text-sm 
+        flex h-12 w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white 
+        placeholder-slate-400 ring-offset-background file:border-0 file:bg-transparent file:text-sm 
         file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/20 
-        focus-visible:ring-offset-2 focus-visible:border-orange-500 disabled:cursor-not-allowed 
-        disabled:opacity-50 appearance-none bg-no-repeat bg-right pr-8
-        ${isPlaceholderSelected ? "text-neutral-400" : "text-white"} 
+        focus-visible:ring-offset-2 focus-visible:border-orange-500 hover:border-slate-500
+        disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-no-repeat bg-right pr-10
+        transition-all duration-200 font-medium
+        ${isPlaceholderSelected ? "text-slate-400" : "text-white"} 
         ${className}
       `}
       style={{
-        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'/%3e%3c/svg%3e")`,
-        backgroundSize: '16px',
-        backgroundPosition: 'right 8px center'
+        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'/%3e%3c/svg%3e")`,
+        backgroundSize: '18px',
+        backgroundPosition: 'right 12px center'
       }}
     >
       {placeholder && (
@@ -45,7 +46,7 @@ export const Select: React.FC<SelectProps> = ({ options, value, defaultValue, on
         </option>
       )}
       {options.map((option) => (
-        <option key={option.value} value={option.value} className="bg-neutral-800 text-white">
+        <option key={option.value} value={option.value} className="bg-slate-800 text-white py-2">
           {option.label}
         </option>
       ))}

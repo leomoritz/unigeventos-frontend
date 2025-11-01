@@ -222,7 +222,7 @@ export default function PaymentListPage() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full h-10 rounded-md border border-slate-600 bg-slate-800/50 px-3 py-2 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 backdrop-blur-sm"
+                      className="w-full h-12 rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 backdrop-blur-sm transition-all duration-200 hover:bg-slate-700/50 appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmOTczMTYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJtNiA5IDYgNiA2LTYiLz48L3N2Zz4=')] bg-no-repeat bg-right-3 bg-center pr-10"
                     >
                       <option value="ALL">Todos</option>
                       <option value="PENDING">Pendente</option>
