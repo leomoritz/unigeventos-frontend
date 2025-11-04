@@ -17,7 +17,9 @@ export default function QRCodeScanner({ onDetected }: Props) {
   const [isScanning, setIsScanning] = useState(false);
   const [isBusyReading, setIsBusyReading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const isTransitioningRef = useRef(false);
+  const cooldownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startScanner = async () => {
     // Previne múltiplas chamadas simultâneas
@@ -61,8 +63,8 @@ export default function QRCodeScanner({ onDetected }: Props) {
           disableFlip: false,
         },
         async (decodedText) => {
-          // Previne leituras múltiplas simultâneas
-          if (isBusyReading) return;
+          // Previne leituras múltiplas simultâneas ou durante cooldown
+          if (isBusyReading || cooldownSeconds > 0) return;
 
           setIsBusyReading(true);
           
@@ -72,10 +74,26 @@ export default function QRCodeScanner({ onDetected }: Props) {
             toast.error("Erro ao processar QR Code");
             console.error(err);
           } finally {
-            // Aguarda 2 segundos antes de permitir nova leitura
-            setTimeout(() => {
-              setIsBusyReading(false);
-            }, 2000);
+            // Inicia contador regressivo de 5 segundos
+            setCooldownSeconds(5);
+            
+            if (cooldownIntervalRef.current) {
+              clearInterval(cooldownIntervalRef.current);
+            }
+            
+            cooldownIntervalRef.current = setInterval(() => {
+              setCooldownSeconds((prev) => {
+                if (prev <= 1) {
+                  if (cooldownIntervalRef.current) {
+                    clearInterval(cooldownIntervalRef.current);
+                    cooldownIntervalRef.current = null;
+                  }
+                  setIsBusyReading(false);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
           }
         },
         (errorMessage) => {
@@ -127,6 +145,9 @@ export default function QRCodeScanner({ onDetected }: Props) {
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
+      }
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
       }
     };
   }, []);
@@ -198,10 +219,24 @@ export default function QRCodeScanner({ onDetected }: Props) {
 
       {/* Status */}
       <div className="text-center">
-        {isScanning && !isBusyReading && (
+        {isScanning && !isBusyReading && cooldownSeconds === 0 && (
           <p className="text-sm text-green-400 flex items-center justify-center gap-2">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             Aguardando QR Code...
+          </p>
+        )}
+        
+        {isBusyReading && cooldownSeconds === 0 && (
+          <p className="text-sm text-orange-400 flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Processando...
+          </p>
+        )}
+        
+        {cooldownSeconds > 0 && (
+          <p className="text-sm text-orange-400 flex items-center justify-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
+            Aguarde {cooldownSeconds}s para próxima leitura...
           </p>
         )}
       </div>
