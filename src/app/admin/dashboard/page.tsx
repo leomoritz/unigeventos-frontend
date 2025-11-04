@@ -3,28 +3,116 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, UserPlus, CalendarPlus, Activity, Clock, Users, Loader2, ScanQrCodeIcon } from "lucide-react";
-import { getPublishedEventsCount } from "@/services/analyticsService";
+import { BarChart3, UserPlus, CalendarPlus, Activity, Clock, Users, Loader2, ScanQrCodeIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { 
+  getPublishedEventsCount,
+  getDailyCheckinsCount,
+  getDailyRegistrationsCount,
+  getMonthlyCompletedEventsCount,
+  AnalyticsEventCountResponse
+} from "@/services/analyticsService";
+
+// Função helper para determinar ícone e cor da tendência
+const getTrendData = (data: AnalyticsEventCountResponse | null) => {
+  if (!data) return { icon: null, color: "" };
+  
+  if (data.percentageChange === 0) {
+    return {
+      icon: <Minus size={16} />,
+      color: "text-slate-500"
+    };
+  } else if (data.isIncrease) {
+    return {
+      icon: <TrendingUp size={16} />,
+      color: "text-green-600"
+    };
+  } else {
+    return {
+      icon: <TrendingDown size={16} />,
+      color: "text-red-600"
+    };
+  }
+};
 
 export default function AdminDashboard() {
   const [publishedEventsCount, setPublishedEventsCount] = useState<number | null>(null);
+  const [dailyCheckinsCount, setDailyCheckinsCount] = useState<number | null>(null);
+  const [dailyRegistrationsData, setDailyRegistrationsData] = useState<AnalyticsEventCountResponse | null>(null);
+  const [monthlyCompletedEventsData, setMonthlyCompletedEventsData] = useState<AnalyticsEventCountResponse | null>(null);
+  
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [isLoadingCheckins, setIsLoadingCheckins] = useState(true);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(true);
+  const [isLoadingCompletedEvents, setIsLoadingCompletedEvents] = useState(true);
 
   useEffect(() => {
-    const fetchPublishedEventsCount = async () => {
-      try {
-        setIsLoadingEvents(true);
-        const count = await getPublishedEventsCount();
-        setPublishedEventsCount(count);
-      } catch (error) {
-        console.error("Erro ao carregar contagem de eventos:", error);
-        setPublishedEventsCount(0);
-      } finally {
-        setIsLoadingEvents(false);
-      }
+    const fetchAnalyticsData = async () => {
+      // Buscar eventos publicados
+      const fetchPublishedEvents = async () => {
+        try {
+          setIsLoadingEvents(true);
+          const count = await getPublishedEventsCount();
+          setPublishedEventsCount(count);
+        } catch (error) {
+          console.error("Erro ao carregar contagem de eventos:", error);
+          setPublishedEventsCount(0);
+        } finally {
+          setIsLoadingEvents(false);
+        }
+      };
+
+      // Buscar check-ins diários
+      const fetchDailyCheckins = async () => {
+        try {
+          setIsLoadingCheckins(true);
+          const count = await getDailyCheckinsCount();
+          setDailyCheckinsCount(count);
+        } catch (error) {
+          console.error("Erro ao carregar contagem de check-ins:", error);
+          setDailyCheckinsCount(0);
+        } finally {
+          setIsLoadingCheckins(false);
+        }
+      };
+
+      // Buscar inscrições diárias
+      const fetchDailyRegistrations = async () => {
+        try {
+          setIsLoadingRegistrations(true);
+          const data = await getDailyRegistrationsCount();
+          setDailyRegistrationsData(data);
+        } catch (error) {
+          console.error("Erro ao carregar contagem de inscrições:", error);
+          setDailyRegistrationsData({ count: 0, percentageChange: 0, isIncrease: false });
+        } finally {
+          setIsLoadingRegistrations(false);
+        }
+      };
+
+      // Buscar eventos concluídos mensais
+      const fetchMonthlyCompletedEvents = async () => {
+        try {
+          setIsLoadingCompletedEvents(true);
+          const data = await getMonthlyCompletedEventsCount();
+          setMonthlyCompletedEventsData(data);
+        } catch (error) {
+          console.error("Erro ao carregar eventos concluídos:", error);
+          setMonthlyCompletedEventsData({ count: 0, percentageChange: 0, isIncrease: false });
+        } finally {
+          setIsLoadingCompletedEvents(false);
+        }
+      };
+
+      // Executar todas as buscas em paralelo
+      await Promise.all([
+        fetchPublishedEvents(),
+        fetchDailyCheckins(),
+        fetchDailyRegistrations(),
+        fetchMonthlyCompletedEvents()
+      ]);
     };
 
-    fetchPublishedEventsCount();
+    fetchAnalyticsData();
   }, []);
 
   return (
@@ -52,23 +140,30 @@ export default function AdminDashboard() {
         <StatCard
           icon={<UserPlus size={24} />}
           title="Inscritos Hoje"
-          value="87"
-          subtitle="Meta: 100 inscrições"
+          value={isLoadingRegistrations ? <Loader2 className="h-6 w-6 animate-spin" /> : dailyRegistrationsData?.count.toString() || "0"}
+          subtitle={dailyRegistrationsData ? `${dailyRegistrationsData.percentageChange > 0 ? '+' : ''}${dailyRegistrationsData.percentageChange.toFixed(1)}% vs ontem` : "Comparado com ontem"}
           color="blue"
+          isLoading={isLoadingRegistrations}
+          trendIcon={getTrendData(dailyRegistrationsData).icon}
+          trendColor={getTrendData(dailyRegistrationsData).color}
         />
         <StatCard
           icon={<Activity size={24} />}
-          title="Check-ins Realizados"
-          value="53"
-          subtitle="Taxa de 85%"
+          title="Check-ins Hoje"
+          value={isLoadingCheckins ? <Loader2 className="h-6 w-6 animate-spin" /> : dailyCheckinsCount?.toString() || "0"}
+          subtitle="Check-ins realizados hoje"
           color="green"
+          isLoading={isLoadingCheckins}
         />
         <StatCard
           icon={<BarChart3 size={24} />}
           title="Eventos Concluídos"
-          value="34"
-          subtitle="Este mês"
+          value={isLoadingCompletedEvents ? <Loader2 className="h-6 w-6 animate-spin" /> : monthlyCompletedEventsData?.count.toString() || "0"}
+          subtitle={monthlyCompletedEventsData ? `${monthlyCompletedEventsData.percentageChange > 0 ? '+' : ''}${monthlyCompletedEventsData.percentageChange.toFixed(1)}% vs mês anterior` : "Este mês"}
           color="purple"
+          isLoading={isLoadingCompletedEvents}
+          trendIcon={getTrendData(monthlyCompletedEventsData).icon}
+          trendColor={getTrendData(monthlyCompletedEventsData).color}
         />
       </div>
 
@@ -139,7 +234,9 @@ function StatCard({
   value, 
   subtitle, 
   color,
-  isLoading = false
+  isLoading = false,
+  trendIcon,
+  trendColor
 }: { 
   icon: React.ReactNode; 
   title: string; 
@@ -147,6 +244,8 @@ function StatCard({
   subtitle?: string;
   color?: string;
   isLoading?: boolean;
+  trendIcon?: React.ReactNode;
+  trendColor?: string;
 }) {
   const colorClasses = {
     orange: "from-orange-500/20 to-red-500/20 text-orange-600 dark:text-orange-400",
@@ -178,7 +277,14 @@ function StatCard({
               )}
             </div>
             {subtitle && (
-              <p className="text-xs text-slate-500 dark:text-slate-500">{subtitle}</p>
+              <div className="flex items-center gap-1">
+                {trendIcon && (
+                  <span className={trendColor || "text-slate-500"}>
+                    {trendIcon}
+                  </span>
+                )}
+                <p className="text-xs text-slate-500 dark:text-slate-500">{subtitle}</p>
+              </div>
             )}
           </div>
         </div>
