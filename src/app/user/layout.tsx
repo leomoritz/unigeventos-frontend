@@ -40,11 +40,13 @@ interface NavItemProps {
   icon: React.ReactNode;
   children: React.ReactNode;
   isActive?: boolean;
+  target?: string;
 }
 
-const NavItem = ({ href, icon, children, isActive }: NavItemProps) => (
+const NavItem = ({ href, icon, children, isActive, target }: NavItemProps) => (
   <Link
     href={href}
+    target={target}
     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
       isActive
         ? "bg-orange-100 text-orange-700 font-medium shadow-sm"
@@ -173,7 +175,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
                   <NavItem href="/user/dashboard" icon={<LayoutIcon size={20} />}>
                     Dashboard
                   </NavItem>
-                  <NavItem href="/events" icon={<CalendarIcon size={20} />}>
+                  <NavItem href="/events" target="_blank" icon={<CalendarIcon size={20} />}>
                     Eventos
                   </NavItem>
                   <NavItem href="/user/subscriptions" icon={<UserCheckIcon size={20} />}>

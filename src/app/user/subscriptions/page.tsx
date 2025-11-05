@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,148 @@ import {
   MoreVertical,
   Eye,
   Download,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
+import { 
+  getAllUserRegistrations, 
+  RegistrationSummaryResponse, 
+  SubscriptionStatus,
+  getTransportationTypeLabel 
+} from "@/services/registrationService";
+import { toast } from "react-toastify";
 
 export default function SubscriptionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [registrations, setRegistrations] = useState<RegistrationSummaryResponse[]>([]);
+  const [filteredRegistrations, setFilteredRegistrations] = useState<RegistrationSummaryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Carregar inscrições do usuário
+  useEffect(() => {
+    const loadRegistrations = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getAllUserRegistrations();
+        setRegistrations(data);
+        setFilteredRegistrations(data);
+      } catch (error) {
+        console.error('Erro ao carregar inscrições:', error);
+        toast.error('Erro ao carregar suas inscrições');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRegistrations();
+  }, []);
+
+  // Filtrar inscrições baseado na busca
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredRegistrations(registrations);
+    } else {
+      const filtered = registrations.filter(registration =>
+        registration.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        registration.organizerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        registration.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredRegistrations(filtered);
+    }
+  }, [searchTerm, registrations]);
+
+  // Função para obter o badge do status
+  const getStatusBadge = (status: SubscriptionStatus) => {
+    const statusConfig = {
+      PENDING: { label: "Pendente", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+      CONFIRMED: { label: "Confirmado", className: "bg-green-100 text-green-800 border-green-200" },
+      CANCELED: { label: "Cancelado", className: "bg-red-100 text-red-800 border-red-200" },
+      WAITLIST: { label: "Lista de Espera", className: "bg-blue-100 text-blue-800 border-blue-200" },
+      REFUNDED: { label: "Reembolsado", className: "bg-gray-100 text-gray-800 border-gray-200" }
+    };
+
+    const config = statusConfig[status] || statusConfig.PENDING;
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  // Função para formatar data
+  const formatDate = (date: Date | string) => {
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Função para formatar data e hora
+  const formatDateTime = (date: Date | string) => {
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Função para formatar período do evento
+  const formatEventPeriod = (startDate: Date | string, endDate: Date | string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Se for o mesmo dia
+    if (start.toDateString() === end.toDateString()) {
+      return formatDateTime(start);
+    }
+    
+    // Se for dias diferentes
+    const startFormatted = start.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short'
+    });
+    const endFormatted = end.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    
+    return `${startFormatted} - ${endFormatted}`;
+  };
+
+  // Função para verificar se pagamento está vencendo
+  const isPaymentDueSoon = (registration: RegistrationSummaryResponse) => {
+    if (!registration.finalDatePayment || registration.status !== 'PENDING') return false;
+    
+    const now = new Date();
+    const dueDate = new Date(registration.finalDatePayment);
+    const diffTime = dueDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays <= 3 && diffDays > 0;
+  };
+
+  // Função para calcular dias restantes para pagamento
+  const getDaysUntilPayment = (registration: RegistrationSummaryResponse) => {
+    if (!registration.finalDatePayment) return 0;
+    
+    const now = new Date();
+    const dueDate = new Date(registration.finalDatePayment);
+    const diffTime = dueDate.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Minhas Inscrições</h1>
-          <p className="text-gray-600">Gerencie todas as suas inscrições em eventos</p>
+          <p className="text-gray-600">
+            {isLoading ? (
+              "Carregando inscrições..."
+            ) : (
+              `${filteredRegistrations.length} inscrição${filteredRegistrations.length !== 1 ? 'ões' : ''} encontrada${filteredRegistrations.length !== 1 ? 's' : ''}`
+            )}
+          </p>
         </div>
       </div>
 
@@ -53,185 +183,147 @@ export default function SubscriptionsPage() {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-500" />
+            <p className="text-gray-600">Carregando suas inscrições...</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Subscriptions List */}
-      <div className="space-y-4">
-        {/* Subscription Item 1 */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Retiro de Jovens 2025
-                  </h3>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    Confirmado
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span>25-27 de Outubro, 2025</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span>Águas de Lindóia, SP</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={16} className="text-gray-400" />
-                    <span>1 participante</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500">
-                    Inscrito em: <strong>15/10/2025</strong>
-                  </span>
-                  <span className="text-gray-500">
-                    Valor: <strong>R$ 350,00</strong>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline">
-                  <Eye size={16} className="mr-1" />
-                  Detalhes
-                </Button>
-                <Button size="sm">
-                  <Download size={16} className="mr-1" />
-                  Comprovante
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Subscription Item 2 */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Congresso de Louvor
-                  </h3>
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                    Pendente Pagamento
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span>15 de Novembro, 2025</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span>Centro de Convenções, SP</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={16} className="text-gray-400" />
-                    <span>1 participante</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500">
-                    Inscrito em: <strong>10/10/2025</strong>
-                  </span>
-                  <span className="text-gray-500">
-                    Valor: <strong>R$ 150,00</strong>
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center gap-2 text-sm text-orange-600">
-                  <AlertCircle size={16} />
-                  <span>Pagamento vence em 3 dias</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline">
-                  <Eye size={16} className="mr-1" />
-                  Detalhes
-                </Button>
-                <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                  Pagar Agora
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Subscription Item 3 */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Workshop de Música
-                  </h3>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    Confirmado
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span>20 de Outubro, 2025</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span>Auditório Central, SP</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={16} className="text-gray-400" />
-                    <span>1 participante</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500">
-                    Inscrito em: <strong>05/10/2025</strong>
-                  </span>
-                  <span className="text-gray-500">
-                    Valor: <strong>R$ 80,00</strong>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline">
-                  <Eye size={16} className="mr-1" />
-                  Detalhes
-                </Button>
-                <Button size="sm">
-                  <Download size={16} className="mr-1" />
-                  Comprovante
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Empty State - se não houver inscrições */}
-      {/* <Card className="text-center p-12">
+      {!isLoading && (
         <div className="space-y-4">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Nenhuma inscrição encontrada</h3>
-            <p className="text-gray-600">Você ainda não se inscreveu em nenhum evento.</p>
-          </div>
-          <Button className="bg-orange-600 hover:bg-orange-700">
-            Explorar Eventos
-          </Button>
+          {filteredRegistrations.map((registration) => (
+            <Card key={registration.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {registration.eventName}
+                      </h3>
+                      {getStatusBadge(registration.status)}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-gray-400" />
+                        <span>{formatEventPeriod(registration.startDatetime, registration.endDatetime)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-gray-400" />
+                        <span>{registration.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-gray-400" />
+                        <span>{registration.numberOfSubscribers} participante(s)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm mb-2">
+                      <span className="text-gray-500">
+                        Inscrito em: <strong>{formatDate(registration.registrationDate)}</strong>
+                      </span>
+                      <span className="text-gray-500">
+                        Organizador: <strong>{registration.organizerName}</strong>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm mb-2">
+                      {registration.isFree ? (
+                        <span className="text-green-600 font-medium">
+                          Evento Gratuito
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-gray-500">
+                            Valor Pago: <strong>R$ {registration.amountPaid?.toFixed(2) || '0,00'}</strong>
+                          </span>
+                          {registration.totalDiscount > 0 && (
+                            <span className="text-green-600">
+                              Desconto: <strong>R$ {registration.totalDiscount.toFixed(2)}</strong>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Informações adicionais */}
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span>
+                        Transporte: <strong>{getTransportationTypeLabel(registration.transportationType)}</strong>
+                      </span>
+                      {registration.checkedIn && (
+                        <span className="text-green-600 font-medium">
+                          ✓ Check-in Realizado
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Alerta de pagamento vencendo */}
+                    {isPaymentDueSoon(registration) && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-orange-600">
+                        <AlertCircle size={16} />
+                        <span>Pagamento vence em {getDaysUntilPayment(registration)} dias</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline">
+                      <Eye size={16} className="mr-1" />
+                      Detalhes
+                    </Button>
+                    {registration.status === 'PENDING' && !registration.isFree ? (
+                      <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
+                        Pagar Agora
+                      </Button>
+                    ) : (
+                      <Button size="sm">
+                        <Download size={16} className="mr-1" />
+                        Comprovante
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </Card> */}
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filteredRegistrations.length === 0 && (
+        <Card className="text-center p-12">
+          <div className="space-y-4">
+            <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+            <div>
+              {searchTerm ? (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900">Nenhuma inscrição encontrada</h3>
+                  <p className="text-gray-600">Nenhuma inscrição corresponde aos critérios de busca "{searchTerm}".</p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900">Nenhuma inscrição encontrada</h3>
+                  <p className="text-gray-600">Você ainda não se inscreveu em nenhum evento.</p>
+                </>
+              )}
+            </div>
+            {!searchTerm && (
+              <Button 
+                className="bg-orange-600 hover:bg-orange-700"
+                onClick={() => window.location.href = '/events'}
+              >
+                Explorar Eventos
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

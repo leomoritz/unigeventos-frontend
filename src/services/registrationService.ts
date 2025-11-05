@@ -40,6 +40,22 @@ export interface SubscriptionsByEventPageResponse {
   totalElements: number;
 }
 
+export interface GetRegistrationsFromCurrentUserResponse {
+    registrations: RegistrationSummaryResponse[];
+}
+
+export interface RegistrationSummaryResponse extends SubscriptionsByEventResponse {
+    eventName: string;
+    organizerName: string;
+    isFree: boolean;
+    startDatetime: Date;
+    endDatetime: Date;
+    location: string;
+    numberOfSubscribers: number;
+    finalDatePayment: Date;
+}
+
+
 export const checkin = async (
   registrationId: string
 ): Promise<void> => {
@@ -141,6 +157,22 @@ export const getSubscriptionsByEvent = async (
   } catch (error: any) {
     throw new Error(
       error.response?.data?.message || "Erro ao buscar os dados do evento."
+    );
+  }
+};
+
+export const getAllUserRegistrations = async (): Promise<RegistrationSummaryResponse[]> => {
+  try {
+    const response = await authApi.get<GetRegistrationsFromCurrentUserResponse>(
+      `/registrations/queries/get-registrations-from-current-user`
+    );
+
+    return response.data.registrations;
+  } catch (error: any) {
+    console.error('Erro ao buscar inscrições do usuário:', error);
+    throw new Error(
+      error?.response?.data?.message ||
+        "Erro ao buscar inscrições do usuário!"
     );
   }
 };
