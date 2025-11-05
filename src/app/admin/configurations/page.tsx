@@ -1,21 +1,203 @@
 "use client";
 
-import { Lock, Bell, Shield, Database, Settings, CreditCard } from "lucide-react";
+import { Lock, Bell, Shield, Database, Settings, CreditCard, Loader2, Trash2 } from "lucide-react";
 import ModernCard from "@/components/admin/ModernCard";
 import PageHeader from "@/components/admin/PageHeader";
 import PasswordResetSection from "@/components/settings/PasswordResetSection";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import { savePaymentConfigurations, getPaymentConfigurations, PaymentConfiguration, deleteAllPaymentConfigurations, deletePaymentConfigurationById } from "@/services/settingsService";
 
 export default function ConfigurationsPage() {
   const [activeTab, setActiveTab] = useState("payments");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(true);
   const [paymentSettings, setPaymentSettings] = useState({
-    creditCard: { enabled: true, maxInstallments: 12, interestRate: 2.5 },
-    invoice: { enabled: true, maxInstallments: 1, interestRate: 0 },
-    pix: { enabled: true, maxInstallments: 1, interestRate: 0 }
+    creditCard: { id: "", enabled: false, maxInstallments: 0, interestRate: 0.0 },
+    invoice: { id: "", enabled: false, maxInstallments: 0, interestRate: 0 },
+    pix: { id: "", enabled: false, maxInstallments: 0, interestRate: 0 }
   });
+
+  // Função para carregar configurações
+  const loadPaymentConfigurations = async () => {
+    try {
+      setIsLoadingConfigs(true);
+      const configs = await getPaymentConfigurations();
+      
+      // Converter array de configurações em objeto estruturado
+      const newSettings = {
+        creditCard: { id: "", enabled: false, maxInstallments: 0, interestRate: 0.0 },
+        invoice: { id: "", enabled: false, maxInstallments: 0, interestRate: 0 },
+        pix: { id: "", enabled: false, maxInstallments: 0, interestRate: 0 }
+      };
+
+      configs.forEach((config: PaymentConfiguration) => {
+        switch (config.paymentType) {
+          case "CREDIT_CARD":
+            newSettings.creditCard = {
+              id: config.id ? config.id : "",
+              enabled: true,
+              maxInstallments: config.maxInstallments,
+              interestRate: config.interestRate
+            };
+            break;
+          case "INVOICE":
+            newSettings.invoice = {
+              id: config.id ? config.id : "",
+              enabled: true,
+              maxInstallments: config.maxInstallments,
+              interestRate: config.interestRate
+            };
+            break;
+          case "PIX":
+            newSettings.pix = {
+              id: config.id ? config.id : "",
+              enabled: true,
+              maxInstallments: config.maxInstallments,
+              interestRate: config.interestRate
+            };
+            break;
+        }
+      });
+
+      setPaymentSettings(newSettings);
+    } catch (error) {
+      console.error("Erro ao carregar configurações:", error);
+      toast.error("Erro ao carregar configurações de pagamento");
+    } finally {
+      setIsLoadingConfigs(false);
+    }
+  };
+
+  // Carregar configurações ao montar o componente
+  useEffect(() => {
+    loadPaymentConfigurations();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+  
+      // Validações
+      if (paymentSettings.creditCard.enabled && paymentSettings.creditCard.maxInstallments === 0) {
+        toast.error("O máximo de parcelas para cartão de crédito deve ser maior que zero.");
+        return;
+      }
+
+      if (paymentSettings.creditCard.enabled && paymentSettings.creditCard.interestRate < 0) {
+        toast.error("A taxa de juros não pode ser negativa.");
+        return;
+      }
+  
+      setIsLoading(true);
+  
+      try {
+        const inputPaymentConfigurations = [];
+        
+        if (paymentSettings.creditCard.enabled) {
+          inputPaymentConfigurations.push({
+            id: paymentSettings.creditCard.id ? paymentSettings.creditCard.id : "",
+            paymentType: "CREDIT_CARD",
+            maxInstallments: paymentSettings.creditCard.maxInstallments,
+            interestRate: paymentSettings.creditCard.interestRate
+          });
+        }
+        if (paymentSettings.invoice.enabled) {
+          inputPaymentConfigurations.push({
+            id: paymentSettings.invoice.id ? paymentSettings.invoice.id : "",
+            paymentType: "INVOICE",
+            maxInstallments: paymentSettings.invoice.maxInstallments,
+            interestRate: paymentSettings.invoice.interestRate
+          });
+        }
+        if (paymentSettings.pix.enabled) {
+          inputPaymentConfigurations.push({
+            id: paymentSettings.pix.id ? paymentSettings.pix.id : "",
+            paymentType: "PIX",
+            maxInstallments: paymentSettings.pix.maxInstallments,
+            interestRate: paymentSettings.pix.interestRate
+          });
+        }
+
+        await savePaymentConfigurations(inputPaymentConfigurations);
+        
+        // Recarregar configurações para obter os IDs atualizados
+        await loadPaymentConfigurations();
+        
+        toast.success("Configurações de pagamento salvas com sucesso!");
+        
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Erro ao salvar configurações";
+        toast.error(`Erro: ${errorMessage}`);
+        console.error("Erro ao salvar configurações:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+  // Função para deletar todas as configurações
+  const handleDeleteAllConfigurations = async () => {
+    const hasAnyConfiguration = paymentSettings.creditCard.enabled || 
+                               paymentSettings.invoice.enabled || 
+                               paymentSettings.pix.enabled;
+                               
+    if (!hasAnyConfiguration) {
+      toast.warning("Não há configurações ativas para remover.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Tem certeza que deseja remover TODAS as configurações de pagamento? Esta ação não pode ser desfeita."
+    );
+
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteAllPaymentConfigurations();
+      
+      // Recarregar configurações do servidor
+      await loadPaymentConfigurations();
+      
+      toast.success("Todas as configurações foram removidas com sucesso!");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erro ao remover configurações";
+      toast.error(`Erro: ${errorMessage}`);
+      console.error("Erro ao remover configurações:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Função para handle mudança de toggle (desativar configuração)
+  const handleToggleChange = async (type: 'creditCard' | 'invoice' | 'pix', enabled: boolean) => {
+    // Se está desabilitando e tem ID, deletar do backend
+    if (!enabled && paymentSettings[type].id) {
+      try {
+        await deletePaymentConfigurationById(paymentSettings[type].id);
+        toast.success(`Configuração de ${type === 'creditCard' ? 'Cartão de Crédito' : type === 'invoice' ? 'Boleto' : 'PIX'} removida com sucesso!`);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Erro ao remover configuração";
+        toast.error(`Erro: ${errorMessage}`);
+        console.error("Erro ao remover configuração:", err);
+        return; // Não atualiza o estado se deu erro
+      }
+    }
+
+    // Atualizar estado local
+    setPaymentSettings(prev => ({
+      ...prev,
+      [type]: { 
+        ...prev[type], 
+        enabled,
+        // Se desabilitando, limpar o ID
+        id: enabled ? prev[type].id : ""
+      }
+    }));
+  };
 
   // Seção de Pagamentos
   const PaymentSection = () => (
@@ -26,6 +208,13 @@ export default function ConfigurationsPage() {
           <p className="text-slate-400 text-sm">Configure os métodos de pagamento e suas condições</p>
         </div>
 
+        {isLoadingConfigs ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-orange-400 mr-3" />
+            <span className="text-slate-400">Carregando configurações...</span>
+          </div>
+        ) : (
+        <>
         <div className="space-y-4">
           {/* Cartão de Crédito */}
           <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
@@ -39,10 +228,7 @@ export default function ConfigurationsPage() {
                   type="checkbox"
                   className="sr-only peer"
                   checked={paymentSettings.creditCard.enabled}
-                  onChange={(e) => setPaymentSettings(prev => ({
-                    ...prev,
-                    creditCard: { ...prev.creditCard, enabled: e.target.checked }
-                  }))}
+                  onChange={(e) => handleToggleChange('creditCard', e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
               </label>
@@ -99,10 +285,7 @@ export default function ConfigurationsPage() {
                   type="checkbox"
                   className="sr-only peer"
                   checked={paymentSettings.invoice.enabled}
-                  onChange={(e) => setPaymentSettings(prev => ({
-                    ...prev,
-                    invoice: { ...prev.invoice, enabled: e.target.checked }
-                  }))}
+                  onChange={(e) => handleToggleChange('invoice', e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
               </label>
@@ -122,10 +305,7 @@ export default function ConfigurationsPage() {
                   type="checkbox"
                   className="sr-only peer"
                   checked={paymentSettings.pix.enabled}
-                  onChange={(e) => setPaymentSettings(prev => ({
-                    ...prev,
-                    pix: { ...prev.pix, enabled: e.target.checked }
-                  }))}
+                  onChange={(e) => handleToggleChange('pix', e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
               </label>
@@ -134,11 +314,46 @@ export default function ConfigurationsPage() {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button className="bg-orange-600 hover:bg-orange-700 text-white">
-            Salvar Configurações
+        <div className="flex justify-between">
+          {/* Botão de Remover - só mostra se houver configurações ativas */}
+          {(paymentSettings.creditCard.enabled || paymentSettings.invoice.enabled || paymentSettings.pix.enabled) && (
+            <Button 
+              onClick={handleDeleteAllConfigurations}
+              disabled={isDeleting || isLoading || isLoadingConfigs}
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Removendo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Remover Configurações
+                </>
+              )}
+            </Button>
+          )}
+          
+          <Button 
+            onClick={handleSubmit}
+            disabled={isLoading || isLoadingConfigs || isDeleting}
+            className="bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Configurações"
+            )}
           </Button>
         </div>
+        </>
+        )}
       </div>
     </ModernCard>
   );

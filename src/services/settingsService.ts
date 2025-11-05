@@ -11,6 +11,13 @@ export interface ChangePasswordResponse {
   message: string;
 }
 
+export interface PaymentConfiguration {
+  id?: string;
+  paymentType: string;
+  maxInstallments: number;
+  interestRate: number;
+}
+
 /**
  * Serviço para alterar a senha do usuário logado
  * Requer autenticação (token JWT)
@@ -27,6 +34,72 @@ export const changePassword = async (
   } catch (error: any) {
     throw new Error(
       error.response?.data?.message || "Erro ao alterar senha"
+    );
+  }
+};
+
+/**
+ * Salva as configurações de pagamento
+ * @param configs Configurações de pagamento a serem salvas
+ * @returns Resposta da API
+ */
+export const savePaymentConfigurations = async (
+  configs: PaymentConfiguration[]
+): Promise<any> => {
+  try {
+  
+    const response = await authApi.post(
+      `/payments-configuration/entities/batch`,
+      configs
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Erro ao salvar configurações de pagamento"
+    );
+  }
+};
+
+/**
+ * Busca as configurações de pagamento atuais
+ * @returns Configurações de pagamento
+ */
+export const getPaymentConfigurations = async (): Promise<PaymentConfiguration[]> => {
+  try {
+    const response = await authApi.get<PaymentConfiguration[]>(
+      `/payments-configuration/entities`
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Erro ao buscar configurações de pagamento"
+    );
+  }
+};
+
+/**
+  * Deleta todas as configurações de pagamento
+  */
+export const deleteAllPaymentConfigurations = async (): Promise<void> => {
+  try {
+    await authApi.delete(`/payments-configuration/entities/batch`);
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Erro ao deletar configurações de pagamento"
+    );
+  }
+};
+
+/**
+ * Deleta uma configuração de pagamento pelo ID
+ * @param id ID da configuração a ser deletada
+ */
+export const deletePaymentConfigurationById = async (id: string): Promise<void> => {
+  try {
+    await authApi.delete(`/payments-configuration/entities/${id}`);
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Erro ao deletar configuração de pagamento"
     );
   }
 };
