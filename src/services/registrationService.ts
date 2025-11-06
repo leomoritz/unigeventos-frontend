@@ -40,19 +40,22 @@ export interface SubscriptionsByEventPageResponse {
   totalElements: number;
 }
 
-export interface GetRegistrationsFromCurrentUserResponse {
-    registrations: RegistrationSummaryResponse[];
-}
-
 export interface RegistrationSummaryResponse extends SubscriptionsByEventResponse {
     eventName: string;
     organizerName: string;
-    isFree: boolean;
+    free: boolean;
     startDatetime: Date;
     endDatetime: Date;
     location: string;
     numberOfSubscribers: number;
     finalDatePayment: Date;
+}
+
+export interface RegistrationSummaryPageResponse {
+    content: RegistrationSummaryResponse[];
+    number: number;
+    totalPages: number;
+    totalElements: number;
 }
 
 
@@ -161,12 +164,19 @@ export const getSubscriptionsByEvent = async (
   }
 };
 
-export const getAllUserRegistrations = async (): Promise<RegistrationSummaryResponse[]> => {
-  try {
-    const response = await authApi.get<GetRegistrationsFromCurrentUserResponse>(
-      `/registrations/queries/get-registrations-from-current-user`
-    );
+export interface GetRegistrationsPageResponse {
+  registrations: RegistrationSummaryPageResponse;
+}
 
+export const getAllUserRegistrations = async (
+  page: number = 0,
+  size: number = 3
+): Promise<GetRegistrationsPageResponse> => {
+  try {
+    const response = await authApi.get(
+      `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}`
+    );
+    
     return response.data.registrations;
   } catch (error: any) {
     console.error('Erro ao buscar inscrições do usuário:', error);

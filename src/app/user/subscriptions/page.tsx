@@ -22,7 +22,8 @@ import {
   getAllUserRegistrations, 
   RegistrationSummaryResponse, 
   SubscriptionStatus,
-  getTransportationTypeLabel 
+  getTransportationTypeLabel,
+  GetRegistrationsPageResponse
 } from "@/services/registrationService";
 import { toast } from "react-toastify";
 
@@ -31,15 +32,24 @@ export default function SubscriptionsPage() {
   const [registrations, setRegistrations] = useState<RegistrationSummaryResponse[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<RegistrationSummaryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [totalElements, setTotalElements] = useState(0);
 
-  // Carregar inscrições do usuário
+  const PAGE_SIZE = 3;
+
+  // Carregar primeira página de inscrições
   useEffect(() => {
-    const loadRegistrations = async () => {
+    const loadInitialRegistrations = async () => {
       try {
         setIsLoading(true);
-        const data = await getAllUserRegistrations();
-        setRegistrations(data);
-        setFilteredRegistrations(data);
+        const response = await getAllUserRegistrations(0, PAGE_SIZE);
+        setRegistrations(response.content);
+        setFilteredRegistrations(response.content);
+        setTotalElements(response.totalElements);
+        setHasMoreData(!response.last);
+        setCurrentPage(0);
       } catch (error) {
         console.error('Erro ao carregar inscrições:', error);
         toast.error('Erro ao carregar suas inscrições');
@@ -48,8 +58,37 @@ export default function SubscriptionsPage() {
       }
     };
 
-    loadRegistrations();
+    loadInitialRegistrations();
   }, []);
+
+  // Função para carregar mais inscrições
+  const loadMoreRegistrations = async () => {
+    if (isLoadingMore || !hasMoreData) return;
+
+    try {
+      setIsLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const response = await getAllUserRegistrations(nextPage, PAGE_SIZE);
+      
+      const newRegistrations = [...registrations, ...response.content];
+      setRegistrations(newRegistrations);
+      setFilteredRegistrations(searchTerm ? 
+        newRegistrations.filter(registration =>
+          registration.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          registration.organizerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          registration.location.toLowerCase().includes(searchTerm.toLowerCase())
+        ) : newRegistrations
+      );
+      
+      setCurrentPage(nextPage);
+      setHasMoreData(!response.last);
+    } catch (error) {
+      console.error('Erro ao carregar mais inscrições:', error);
+      toast.error('Erro ao carregar mais inscrições');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   // Filtrar inscrições baseado na busca
   useEffect(() => {
@@ -154,7 +193,7 @@ export default function SubscriptionsPage() {
             {isLoading ? (
               "Carregando inscrições..."
             ) : (
-              `${filteredRegistrations.length} inscrição${filteredRegistrations.length !== 1 ? 'ões' : ''} encontrada${filteredRegistrations.length !== 1 ? 's' : ''}`
+              `${filteredRegistrations?.length || 0} de ${totalElements} inscrição${totalElements !== 1 ? 'ões' : ''}`
             )}
           </p>
         </div>
@@ -168,17 +207,19 @@ export default function SubscriptionsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input
-                  placeholder="Buscar por nome do evento..."
+                  placeholder="Buscar por nome do evento, organizador ou localização..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter size={18} />
-              Filtros
-            </Button>
+            {searchTerm && hasMoreData && (
+              <div className="text-sm text-orange-600 flex items-center gap-1">
+                <AlertCircle size={14} />
+                Busca limitada aos {registrations.length} itens carregados
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -196,7 +237,7 @@ export default function SubscriptionsPage() {
       {/* Subscriptions List */}
       {!isLoading && (
         <div className="space-y-4">
-          {filteredRegistrations.map((registration) => (
+          {(filteredRegistrations || []).map((registration) => (
             <Card key={registration.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -292,11 +333,34 @@ export default function SubscriptionsPage() {
               </CardContent>
             </Card>
           ))}
+          
+          {/* Load More Button */}
+          {!searchTerm && hasMoreData && (filteredRegistrations?.length || 0) > 0 && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <Button
+                  onClick={loadMoreRegistrations}
+                  disabled={isLoadingMore}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Carregando mais...
+                    </>
+                  ) : (
+                    `Carregar Mais (${totalElements - (filteredRegistrations?.length || 0)} restantes)`
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoading && filteredRegistrations.length === 0 && (
+      {!isLoading && (filteredRegistrations?.length || 0) === 0 && (
         <Card className="text-center p-12">
           <div className="space-y-4">
             <Calendar className="mx-auto h-12 w-12 text-gray-400" />
