@@ -274,7 +274,7 @@ export default function SubscriptionsPage() {
                     </div>
 
                     <div className="flex items-center gap-4 text-sm mb-2">
-                      {registration.isFree ? (
+                      {registration.free ? (
                         <span className="text-green-600 font-medium">
                           Evento Gratuito
                         </span>
@@ -318,7 +318,7 @@ export default function SubscriptionsPage() {
                       <Eye size={16} className="mr-1" />
                       Detalhes
                     </Button>
-                    {registration.status === 'PENDING' && !registration.isFree ? (
+                    {registration.status === 'PENDING' && !registration.free ? (
                       <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
                         Pagar Agora
                       </Button>

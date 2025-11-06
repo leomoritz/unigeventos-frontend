@@ -56,6 +56,10 @@ export interface RegistrationSummaryPageResponse {
     number: number;
     totalPages: number;
     totalElements: number;
+    last: boolean;
+    size: number;
+    first: boolean;
+    numberOfElements: number;
 }
 
 
@@ -171,7 +175,7 @@ export interface GetRegistrationsPageResponse {
 export const getAllUserRegistrations = async (
   page: number = 0,
   size: number = 3
-): Promise<GetRegistrationsPageResponse> => {
+): Promise<RegistrationSummaryPageResponse> => {
   try {
     const response = await authApi.get(
       `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}`
