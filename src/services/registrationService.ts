@@ -49,6 +49,15 @@ export interface RegistrationSummaryResponse extends SubscriptionsByEventRespons
     location: string;
     numberOfSubscribers: number;
     finalDatePayment: Date;
+    paymentsOfRegistration: PaymentSummaryResponse[];
+}
+
+export interface PaymentSummaryResponse {
+    status: string;
+    paymentType: string;
+    paymentDate: Date;
+    amount: number;
+    installments: number;
 }
 
 export interface RegistrationSummaryPageResponse {
@@ -174,11 +183,13 @@ export interface GetRegistrationsPageResponse {
 
 export const getAllUserRegistrations = async (
   page: number = 0,
-  size: number = 3
+  size: number = 3,
+  sortBy: string = 'status',
+  sortDirection: string = 'ASC'
 ): Promise<RegistrationSummaryPageResponse> => {
   try {
     const response = await authApi.get(
-      `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}`
+      `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}&sort=${sortBy}&direction=${sortDirection}`
     );
     
     return response.data.registrations;
