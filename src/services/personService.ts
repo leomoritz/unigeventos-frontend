@@ -46,6 +46,7 @@ export interface PersonResponse {
   isLeader: boolean;
   contact: {
     phoneNumber: string;
+    email: string;
   };
   document: {
     number: string;
@@ -56,6 +57,7 @@ export interface PersonResponse {
     username: string;
     lastLogin: Date;
     roles: Role[];
+    createdDate: Date;
   };
   personalContactEmail: string;
 }

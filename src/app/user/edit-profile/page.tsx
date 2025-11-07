@@ -43,10 +43,17 @@ export default function EditProfilePage() {
       // Função para formatar data evitando problemas de timezone
       const formatDateForInput = (date: Date | string) => {
         if (!date) return "";
-        const dateObj = new Date(date);
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
+        
+        // Se for string, extrair apenas a parte da data (YYYY-MM-DD)
+        if (typeof date === 'string') {
+          return date.split('T')[0];
+        }
+        
+        // Se for Date object, formatar para YYYY-MM-DD usando valores locais
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
         return `${year}-${month}-${day}`;
       };
 
@@ -60,7 +67,7 @@ export default function EditProfilePage() {
         choralVoiceType: profile.choralVoiceType || "",
         phoneNumber: profile.contact?.phoneNumber || "",
         documentNumber: profile.document?.number || "",
-        personalContactEmail: profile.contact?.email || ""
+        personalContactEmail: profile.personalContactEmail || profile.contact?.email || ""
       });
     }
   }, [profile]);

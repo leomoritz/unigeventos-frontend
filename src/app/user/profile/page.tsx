@@ -16,11 +16,14 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { genderTypeLabels, maritalStatusTypeLabels, choralVoiceTypeLabels } from "@/services/personService";
+import { formatDate } from "date-fns";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { profile, loading, error } = useProfile();
+  const { roles: contextRoles } = useAuth(); // Roles do contexto/middleware
 
   if (loading) {
     return (
@@ -63,13 +66,40 @@ export default function ProfilePage() {
     );
   }
 
-  const formatDate = (date: Date | string) => {
-    // Criar a data de forma que evite problemas de timezone
-    const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : new Date(date);
+  // Função para formatar datas de nascimento (evita problemas de timezone)
+  const formatBirthDate = (date: Date | string) => {
+    if (!date) return 'Não informado';
+    
+    // Solução mais simples: adicionar horário para evitar interpretação UTC
+    let dateToFormat;
+    if (typeof date === 'string') {
+      // Se a string não tem horário, adicionar meio-dia para evitar problemas de timezone
+      const dateString = date.includes('T') ? date : date + 'T12:00:00';
+      dateToFormat = new Date(dateString);
+    } else {
+      dateToFormat = date;
+    }
+
+    return dateToFormat.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Função para formatar timestamps de login (formato Instant do backend)
+  const formatLastLoginDate = (date: Date | string) => {
+    if (!date) return 'Não disponível';
+    
+    // Para timestamps, usar diretamente o construtor Date
+    const dateObj = new Date(date);
     return dateObj.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
+    }) + ' às ' + dateObj.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -116,7 +146,7 @@ export default function ProfilePage() {
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900">{profile.name}</h2>
               <p className="text-gray-600">
-                Membro desde {profile.login?.lastLogin ? formatDate(profile.login.lastLogin) : 'Data não informada'}
+                Membro desde {profile.login?.createdDate ? formatLastLoginDate(profile.login.createdDate) : 'Data não informada'}
               </p>
               <div className="flex items-center gap-3 mt-2">
                 <Badge className="bg-green-100 text-green-800 border-green-200">
@@ -151,7 +181,7 @@ export default function ProfilePage() {
             <div>
               <label className="text-sm font-medium text-gray-500">Data de Nascimento</label>
               <p className="text-gray-900">
-                {profile.birthdate ? formatDate(profile.birthdate) : 'Não informado'}
+                {profile.birthdate ? formatBirthDate(profile.birthdate) : 'Não informado'}
               </p>
             </div>
 
@@ -259,7 +289,7 @@ export default function ProfilePage() {
             <div>
               <label className="text-sm font-medium text-gray-500">Último Acesso</label>
               <p className="text-gray-900">
-                {profile.login?.lastLogin ? formatDate(profile.login.lastLogin) : 'Não disponível'}
+                {profile.login?.lastLogin ? formatLastLoginDate(profile.login.lastLogin) : 'Não disponível'}
               </p>
             </div>
 
@@ -280,14 +310,19 @@ export default function ProfilePage() {
             <div>
               <label className="text-sm font-medium text-gray-500">Perfis de Acesso</label>
               <div className="flex flex-wrap gap-1">
-                {profile.login?.roles?.map((role, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {role.role.replace('ROLE_', '')}
-                  </Badge>
-                )) || (
+                {contextRoles && contextRoles.length > 0 ? (
+                  contextRoles.map((role, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {role.replace('ROLE_', '')}
+                    </Badge>
+                  ))
+                ) : (
                   <span className="text-gray-900">Nenhum perfil definido</span>
                 )}
               </div>
+              <p className="text-xs text-gray-400 mt-1">
+                * Perfis mapeados pelo middleware de autenticação
+              </p>
             </div>
           </div>
         </CardContent>
