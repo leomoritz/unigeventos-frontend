@@ -17,7 +17,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
-import { genderTypeLabels, maritalStatusTypeLabels, choralVoiceTypeLabels } from "@/services/personService";
+import { 
+  genderTypeLabels, 
+  maritalStatusTypeLabels, 
+  choralVoiceTypeLabels, 
+  documentTypeLabels,
+  formatDocumentByType 
+} from "@/services/personService";
 import { formatDate } from "date-fns";
 
 export default function ProfilePage() {
@@ -103,9 +109,8 @@ export default function ProfilePage() {
     });
   };
 
-  const formatCPF = (cpf: string) => {
-    if (!cpf) return '***.***.***-**';
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  const formatDocument = (documentNumber: string, documentType: string) => {
+    return formatDocumentByType(documentNumber, documentType);
   };
 
   const formatPhone = (phone: string) => {
@@ -186,9 +191,14 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-500">CPF</label>
+              <label className="text-sm font-medium text-gray-500">
+                {documentTypeLabels[profile.document?.documentType] || 'Documento'}
+              </label>
               <p className="text-gray-900">
-                {profile.document?.number ? formatCPF(profile.document.number) : '***.***.***-**'}
+                {profile.document?.number ? 
+                  formatDocument(profile.document.number, profile.document.documentType) : 
+                  '***.***.***-**'
+                }
               </p>
             </div>
 
@@ -265,7 +275,9 @@ export default function ProfilePage() {
 
             <div>
               <label className="text-sm font-medium text-gray-500">Tipo de Documento</label>
-              <p className="text-gray-900">{profile.document?.documentType || 'Não informado'}</p>
+              <p className="text-gray-900">
+                {documentTypeLabels[profile.document?.documentType] || 'Não informado'}
+              </p>
             </div>
           </div>
         </CardContent>

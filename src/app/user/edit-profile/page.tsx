@@ -18,12 +18,14 @@ import {
 import Link from "next/link";
 import { useProfile } from "@/hooks/useProfile";
 import { UpdatePersonPayload } from "@/services/profileService";
-import { choralVoiceTypeLabels } from "@/services/personService";
+import { choralVoiceTypeLabels, documentTypeLabels, formatDocumentByType } from "@/services/personService";
+import { useDocumentMask } from "@/hooks/useFieldMasks";
 import { useRouter } from "next/navigation";
 
 export default function EditProfilePage() {
   const router = useRouter();
   const { profile, loading, error, updateProfile, updating } = useProfile();
+  const { formatDocument, validateDocument, getDocumentPlaceholder } = useDocumentMask();
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<UpdatePersonPayload>({
     name: "",
@@ -35,6 +37,7 @@ export default function EditProfilePage() {
     choralVoiceType: "",
     phoneNumber: "",
     documentNumber: "",
+    documentType: "",
     personalContactEmail: ""
   });
 
@@ -67,6 +70,7 @@ export default function EditProfilePage() {
         choralVoiceType: profile.choralVoiceType || "",
         phoneNumber: profile.contact?.phoneNumber || "",
         documentNumber: profile.document?.number || "",
+        documentType: profile.document?.documentType || "",
         personalContactEmail: profile.personalContactEmail || profile.contact?.email || ""
       });
     }
@@ -82,6 +86,15 @@ export default function EditProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação do documento se estiver preenchido
+    if (formData.documentNumber && formData.documentType) {
+      if (!validateDocument(formData.documentNumber, formData.documentType as 'CPF' | 'RG')) {
+        alert(`Por favor, insira um ${formData.documentType} válido.`);
+        return;
+      }
+    }
+    
     try {
       await updateProfile(formData);
       setSuccess(true);
@@ -212,25 +225,86 @@ export default function EditProfilePage() {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="church">Igreja</Label>
+              <Input
+                id="church"
+                value={formData.church}
+                onChange={(e) => handleInputChange("church", e.target.value)}
+                placeholder="Nome da sua igreja"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Document Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User size={20} className="text-orange-600" />
+              Documentação
+            </CardTitle>
+            <CardDescription>
+              Informações dos seus documentos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="church">Igreja</Label>
-                <Input
-                  id="church"
-                  value={formData.church}
-                  onChange={(e) => handleInputChange("church", e.target.value)}
-                  placeholder="Nome da sua igreja"
-                />
+                <Label htmlFor="documentType">Tipo de Documento</Label>
+                <select
+                  id="documentType"
+                  value={formData.documentType}
+                  onChange={(e) => {
+                    handleInputChange("documentType", e.target.value);
+                    // Limpar o número quando mudar o tipo
+                    if (e.target.value !== formData.documentType) {
+                      handleInputChange("documentNumber", "");
+                    }
+                  }}
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Selecione o tipo...</option>
+                  {Object.entries(documentTypeLabels).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
-                <Label htmlFor="documentNumber">CPF</Label>
+                <Label htmlFor="documentNumber">
+                  {documentTypeLabels[formData.documentType] || 'Número do Documento'}
+                </Label>
                 <Input
                   id="documentNumber"
-                  value={formData.documentNumber}
-                  onChange={(e) => handleInputChange("documentNumber", e.target.value)}
-                  placeholder="000.000.000-00"
+                  value={formData.documentType ? 
+                    formatDocument(formData.documentNumber, formData.documentType as 'CPF' | 'RG') : 
+                    formData.documentNumber
+                  }
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/\D/g, '');
+                    handleInputChange("documentNumber", rawValue);
+                  }}
+                  placeholder={formData.documentType ? 
+                    getDocumentPlaceholder(formData.documentType as 'CPF' | 'RG') : 
+                    'Selecione o tipo primeiro'
+                  }
+                  disabled={!formData.documentType}
+                  className={
+                    formData.documentNumber && formData.documentType && 
+                    !validateDocument(formData.documentNumber, formData.documentType as 'CPF' | 'RG')
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                      : ''
+                  }
                 />
+                {formData.documentNumber && formData.documentType && 
+                 !validateDocument(formData.documentNumber, formData.documentType as 'CPF' | 'RG') && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {formData.documentType} inválido
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>

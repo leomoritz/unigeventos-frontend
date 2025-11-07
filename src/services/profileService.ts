@@ -12,6 +12,7 @@ export interface UpdatePersonPayload {
   choralVoiceType: string;
   phoneNumber: string;
   documentNumber: string;
+  documentType: string;
   personalContactEmail: string;
 }
 
