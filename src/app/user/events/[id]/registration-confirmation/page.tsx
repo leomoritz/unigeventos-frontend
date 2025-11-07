@@ -489,7 +489,9 @@ export default function ConfirmationPage() {
                 {registration?.status === 'CONFIRMED'
                   ? 'Sua inscrição está confirmada! Você receberá o QR Code de acesso por e-mail.'
                   : registration?.status === 'PENDING'
-                  ? `Lembre-se de efetuar o pagamento até ${formatDate(event.finalDatePayment)} para garantir sua vaga.`
+                  ? event.isFree 
+                    ? 'Sua inscrição no evento gratuito será processada em breve.'
+                    : `Lembre-se de efetuar o pagamento até ${formatDate(event.finalDatePayment)} para garantir sua vaga.`
                   : 'Consulte os organizadores para mais informações.'}
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -707,7 +709,7 @@ export default function ConfirmationPage() {
             )}
 
             {/* QR Code Section */}
-            {paid && registration?.qrCodeBase64 && (
+            {(paid || event.isFree) && registration?.qrCodeBase64 && (
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
                   <QrCode className="h-4 w-4 text-orange-600" />
@@ -803,7 +805,7 @@ export default function ConfirmationPage() {
               </div>
             </div>
             
-            {!paid && (
+            {!paid && !event.isFree && (
               <div className="flex items-start space-x-3">
                 <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                   2
@@ -819,12 +821,12 @@ export default function ConfirmationPage() {
             
             <div className="flex items-start space-x-3">
               <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                {paid ? '2' : '3'}
+                {paid || event.isFree ? '2' : '3'}
               </div>
               <div>
                 <p className="font-medium text-blue-800">QR Code de Acesso</p>
                 <p className="text-blue-700">
-                  {paid 
+                  {paid || event.isFree
                     ? 'Seu QR Code será enviado por e-mail em breve.'
                     : 'Após o pagamento, você receberá o QR Code para acesso ao evento.'
                   }
@@ -834,7 +836,7 @@ export default function ConfirmationPage() {
             
             <div className="flex items-start space-x-3">
               <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                {paid ? '3' : '4'}
+                {paid || event.isFree ? '3' : '4'}
               </div>
               <div>
                 <p className="font-medium text-blue-800">Comparecer ao Evento</p>
@@ -847,8 +849,8 @@ export default function ConfirmationPage() {
         </CardContent>
       </Card>
 
-      {/* Cards de pagamento */}
-      {registration?.status !== 'CONFIRMED' && (
+      {/* Cards de pagamento - apenas se evento não for gratuito */}
+      {registration?.status !== 'CONFIRMED' && !event.isFree && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Pay Now */}
           <Card className="border-green-200 hover:border-green-300 transition-colors">
@@ -864,10 +866,10 @@ export default function ConfirmationPage() {
               </p>
               <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="text-2xl font-bold text-green-700 mb-1">
-                  {formatPrice(getCurrentBatch()!.price)}
+                  {getCurrentBatch()?.price ? formatPrice(getCurrentBatch()!.price) : 'Valor não informado'}
                 </div>
                 <div className="text-sm text-green-600">
-                  {getCurrentBatch()!.name}
+                  {getCurrentBatch()?.name || 'Lote não informado'}
                 </div>
               </div>
               <Button
@@ -911,6 +913,29 @@ export default function ConfirmationPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Mensagem para evento gratuito */}
+      {event.isFree && registration?.status !== 'CONFIRMED' && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <CheckCircle className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">Evento Gratuito</h3>
+              <p className="text-blue-700 mb-4">
+                Este é um evento gratuito! Sua inscrição será confirmada automaticamente.
+              </p>
+              <div className="bg-blue-100 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-blue-800 mb-2">Próximos Passos:</h4>
+                <ul className="text-sm text-blue-700 space-y-1 text-left">
+                  <li>• Aguarde o e-mail de confirmação</li>
+                  <li>• Você receberá o QR Code de acesso em breve</li>
+                  <li>• Compareça no local e horário do evento</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Action Buttons */}

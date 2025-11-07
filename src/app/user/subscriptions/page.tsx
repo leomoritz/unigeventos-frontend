@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
 import { toast } from "react-toastify";
 
 export default function SubscriptionsPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState<RegistrationSummaryResponse[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<RegistrationSummaryResponse[]>([]);
@@ -184,6 +186,212 @@ export default function SubscriptionsPage() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  // Função para navegar para detalhes da inscrição
+  const handleViewDetails = (registration: RegistrationSummaryResponse) => {
+    const eventId = registration.eventId;
+    const registrationId = registration.id;
+    const isPaid = registration.status === 'CONFIRMED' && registration.free === false;
+    
+    router.push(`/user/events/${eventId}/registration-confirmation?registrationId=${registrationId}&paid=${isPaid}`);
+  };
+
+  // Função para gerar e baixar PDF do comprovante
+  const handleDownloadPDF = async (registration: RegistrationSummaryResponse) => {
+    try {
+      // Importação dinâmica para reduzir o bundle size
+      const jsPDF = (await import('jspdf')).default;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+      
+      // Configuração de cores
+      const primaryColor: [number, number, number] = [234, 88, 12]; // Orange-600
+      const textColor: [number, number, number] = [31, 41, 55]; // Gray-800
+      const lightGray: [number, number, number] = [156, 163, 175]; // Gray-400
+      
+      let yPosition = margin;
+
+      // Header com logo (simulado)
+      pdf.setFillColor(...primaryColor);
+      pdf.rect(margin, yPosition, contentWidth, 15, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('COMPROVANTE DE INSCRIÇÃO', margin + 5, yPosition + 10);
+      
+      yPosition += 25;
+
+      // Informações do evento
+      pdf.setTextColor(...textColor);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('EVENTO:', margin, yPosition);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(12);
+      const eventNameLines = pdf.splitTextToSize(registration.eventName, contentWidth - 30);
+      pdf.text(eventNameLines, margin + 30, yPosition);
+      yPosition += eventNameLines.length * 5 + 10;
+
+      // Dados da inscrição
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DADOS DA INSCRIÇÃO', margin, yPosition);
+      yPosition += 10;
+
+      // Informações em duas colunas
+      const leftColumn = margin;
+      const rightColumn = pageWidth / 2;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      
+      // Coluna esquerda
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ID da Inscrição:', leftColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(registration.id.slice(-8).toUpperCase(), leftColumn + 35, yPosition);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Status:', rightColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      const statusConfig = {
+        PENDING: 'Pendente',
+        CONFIRMED: 'Confirmado',
+        CANCELED: 'Cancelado',
+        WAITLIST: 'Lista de Espera',
+        REFUNDED: 'Reembolsado'
+      };
+      pdf.text(statusConfig[registration.status] || registration.status, rightColumn + 25, yPosition);
+      
+      yPosition += 8;
+      
+      // Data da inscrição
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Data da Inscrição:', leftColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formatDate(registration.registrationDate), leftColumn + 35, yPosition);
+      
+      // Valor pago
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Valor:', rightColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      const valor = registration.free ? 'Gratuito' : `R$ ${registration.amountPaid?.toFixed(2).replace('.', ',') || '0,00'}`;
+      pdf.text(valor, rightColumn + 25, yPosition);
+      
+      yPosition += 8;
+      
+      // Local e organizador
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Local:', leftColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      const locationLines = pdf.splitTextToSize(registration.location, contentWidth/2 - 35);
+      pdf.text(locationLines, leftColumn + 35, yPosition);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Organizador:', rightColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      const organizerLines = pdf.splitTextToSize(registration.organizerName, contentWidth/2 - 25);
+      pdf.text(organizerLines, rightColumn + 25, yPosition);
+      
+      yPosition += Math.max(locationLines.length, organizerLines.length) * 5 + 10;
+      
+      // Período do evento
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Período do Evento:', leftColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formatEventPeriod(registration.startDatetime, registration.endDatetime), leftColumn + 35, yPosition);
+      
+      // Transporte
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Transporte:', rightColumn, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(getTransportationTypeLabel(registration.transportationType), rightColumn + 25, yPosition);
+      
+      yPosition += 15;
+
+      // Desconto (se aplicável)
+      if (registration.totalDiscount > 0) {
+        pdf.setFillColor(220, 252, 231); // Green-50
+        pdf.rect(margin, yPosition - 5, contentWidth, 15, 'F');
+        
+        pdf.setTextColor(5, 150, 105); // Green-600
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('DESCONTO APLICADO:', margin + 5, yPosition + 5);
+        pdf.text(`R$ ${registration.totalDiscount.toFixed(2).replace('.', ',')}`, rightColumn + 20, yPosition + 5);
+        
+        yPosition += 20;
+      }
+
+      // QR Code (se disponível)
+      if (registration.qrCodeBase64) {
+        yPosition += 10;
+        
+        pdf.setTextColor(...textColor);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.text('QR CODE DE ACESSO:', margin, yPosition);
+        
+        yPosition += 10;
+        
+        try {
+          // Adicionar QR Code ao PDF
+          const qrSize = 40;
+          pdf.addImage(
+            `data:image/png;base64,${registration.qrCodeBase64}`,
+            'PNG',
+            (pageWidth - qrSize) / 2,
+            yPosition,
+            qrSize,
+            qrSize
+          );
+          
+          yPosition += qrSize + 10;
+          
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(10);
+          pdf.setTextColor(...lightGray);
+          pdf.text('Apresente este código no dia do evento', (pageWidth - 80) / 2, yPosition);
+        } catch (error) {
+          console.warn('Erro ao adicionar QR Code ao PDF:', error);
+        }
+      }
+
+      // Footer
+      yPosition = pageHeight - 30;
+      pdf.setFillColor(...primaryColor);
+      pdf.rect(margin, yPosition, contentWidth, 1, 'F');
+      
+      yPosition += 8;
+      pdf.setTextColor(...lightGray);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Este é um comprovante gerado automaticamente.', margin, yPosition);
+      pdf.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, yPosition + 4);
+
+      // Download do PDF
+      const fileName = `comprovante-inscricao-${registration.eventName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${registration.id.slice(-8)}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('Comprovante baixado com sucesso!');
+      
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar comprovante. Tente novamente.');
+    }
+  };
+
+  const handleViewPaymentDetails = (registration: RegistrationSummaryResponse) => {
+    const eventId = registration.eventId;
+    const registrationId = registration.id;
+    
+    router.push(`/user/events/${eventId}/registration-payment?registrationId=${registrationId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -314,18 +522,31 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleViewDetails(registration)}
+                    >
                       <Eye size={16} className="mr-1" />
                       Detalhes
                     </Button>
                     {registration.status === 'PENDING' && !registration.free ? (
-                      <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
+                      <Button 
+                        size="sm" 
+                        className="bg-orange-600 hover:bg-orange-700"
+                        onClick={() => handleViewPaymentDetails(registration)}
+                      >
                         Pagar Agora
                       </Button>
                     ) : (
-                      <Button size="sm">
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        className="border-green-600 text-green-600 hover:bg-green-50"
+                        onClick={() => handleDownloadPDF(registration)}
+                      >
                         <Download size={16} className="mr-1" />
-                        Comprovante
+                        Baixar PDF
                       </Button>
                     )}
                   </div>
