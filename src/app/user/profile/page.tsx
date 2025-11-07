@@ -228,7 +228,7 @@ export default function ProfilePage() {
 
             <div>
               <label className="text-sm font-medium text-gray-500">Email Pessoal</label>
-              <p className="text-gray-900">{profile.personalContactEmail || 'Não informado'}</p>
+              <p className="text-gray-900">{profile.contact?.email || 'Não informado'}</p>
             </div>
             
             <div>
