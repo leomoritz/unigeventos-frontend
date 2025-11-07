@@ -19,13 +19,15 @@ import Link from "next/link";
 import { useProfile } from "@/hooks/useProfile";
 import { UpdatePersonPayload } from "@/services/profileService";
 import { choralVoiceTypeLabels, documentTypeLabels, formatDocumentByType } from "@/services/personService";
-import { useDocumentMask } from "@/hooks/useFieldMasks";
+import { useDocumentMask, usePhoneMask, useEmailValidation } from "@/hooks/useFieldMasks";
 import { useRouter } from "next/navigation";
 
 export default function EditProfilePage() {
   const router = useRouter();
   const { profile, loading, error, updateProfile, updating } = useProfile();
   const { formatDocument, validateDocument, getDocumentPlaceholder } = useDocumentMask();
+  const { formatPhone, validatePhone } = usePhoneMask();
+  const { validateEmail, normalizeEmail } = useEmailValidation();
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<UpdatePersonPayload>({
     name: "",
@@ -95,8 +97,27 @@ export default function EditProfilePage() {
       }
     }
     
+    // Validação do e-mail se estiver preenchido
+    if (formData.personalContactEmail && !validateEmail(formData.personalContactEmail)) {
+      alert('Por favor, insira um e-mail válido.');
+      return;
+    }
+    
+    // Validação do telefone se estiver preenchido
+    if (formData.phoneNumber && !validatePhone(formData.phoneNumber)) {
+      alert('Por favor, insira um telefone válido.');
+      return;
+    }
+    
     try {
-      await updateProfile(formData);
+      // Normalizar e-mail antes de enviar
+      const dataToSubmit = {
+        ...formData,
+        personalContactEmail: formData.personalContactEmail ? 
+          normalizeEmail(formData.personalContactEmail) : formData.personalContactEmail
+      };
+      
+      await updateProfile(dataToSubmit);
       setSuccess(true);
       setTimeout(() => {
         router.push('/user/profile');
@@ -328,9 +349,28 @@ export default function EditProfilePage() {
                 id="personalContactEmail"
                 type="email"
                 value={formData.personalContactEmail}
-                onChange={(e) => handleInputChange("personalContactEmail", e.target.value)}
+                onChange={(e) => {
+                  handleInputChange("personalContactEmail", e.target.value);
+                }}
+                onBlur={(e) => {
+                  // Normalizar e-mail ao sair do campo
+                  if (e.target.value) {
+                    const normalized = normalizeEmail(e.target.value);
+                    handleInputChange("personalContactEmail", normalized);
+                  }
+                }}
                 placeholder="seu.email@exemplo.com"
+                className={
+                  formData.personalContactEmail && !validateEmail(formData.personalContactEmail)
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }
               />
+              {formData.personalContactEmail && !validateEmail(formData.personalContactEmail) && (
+                <p className="text-red-500 text-sm mt-1">
+                  E-mail inválido
+                </p>
+              )}
             </div>
 
             <div>
@@ -339,9 +379,26 @@ export default function EditProfilePage() {
                 id="phoneNumber"
                 type="tel"
                 placeholder="(11) 99999-9999"
-                value={formData.phoneNumber}
-                onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                value={formatPhone(formData.phoneNumber)}
+                onChange={(e) => {
+                  // Remover formatação para armazenar apenas números
+                  const rawValue = e.target.value.replace(/\D/g, '');
+                  handleInputChange("phoneNumber", rawValue);
+                }}
+                className={
+                  formData.phoneNumber && !validatePhone(formData.phoneNumber)
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }
               />
+              {formData.phoneNumber && !validatePhone(formData.phoneNumber) && (
+                <p className="text-red-500 text-sm mt-1">
+                  Telefone inválido (deve ter 10 ou 11 dígitos)
+                </p>
+              )}
+              <p className="text-gray-500 text-xs mt-1">
+                Formato: (11) 99999-9999 ou (11) 9999-9999
+              </p>
             </div>
           </CardContent>
         </Card>
