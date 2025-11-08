@@ -18,9 +18,16 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
+import { useRecentRegistrations } from "@/hooks/useRecentRegistrations";
 export default function UserDashboard() {
   const router = useRouter();
   const { events, loading, error, refreshEvents } = useUpcomingEvents();
+  const { 
+    registrations, 
+    loading: registrationsLoading, 
+    error: registrationsError,
+    refreshRegistrations
+  } = useRecentRegistrations();
 
   // Função para calcular quantos dias faltam para o evento
   const calculateDaysUntilEvent = (eventDate: Date) => {
@@ -61,6 +68,46 @@ export default function UserDashboard() {
     return new Date(eventDate).getDate();
   };
 
+  // Função para formatar data de inscrição
+  const formatRegistrationDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Função para mapear status da inscrição para badges
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { text: string; className: string }> = {
+      CONFIRMED: {
+        text: 'Confirmado',
+        className: 'bg-green-100 text-green-800'
+      },
+      PENDING: {
+        text: 'Pendente',
+        className: 'bg-yellow-100 text-yellow-800'
+      },
+      CANCELED: {
+        text: 'Cancelado',
+        className: 'bg-red-100 text-red-800'
+      },
+      WAITLIST: {
+        text: 'Lista de Espera',
+        className: 'bg-blue-100 text-blue-800'
+      },
+      REFUNDED: {
+        text: 'Reembolsado',
+        className: 'bg-purple-100 text-purple-800'
+      }
+    };
+
+    return statusMap[status] || {
+      text: status,
+      className: 'bg-gray-100 text-gray-800'
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -90,9 +137,16 @@ export default function UserDashboard() {
             <TicketIcon className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">3</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {registrationsLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                Array.isArray(registrations) ? 
+                registrations.filter(reg => reg.status === 'CONFIRMED' || reg.status === 'PENDING').length : 0
+              )}
+            </div>
             <p className="text-xs text-gray-500">
-              +1 desde o mês passado
+              Confirmadas e pendentes
             </p>
           </CardContent>
         </Card>
@@ -163,48 +217,74 @@ export default function UserDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">Retiro de Jovens 2025</h4>
-                <p className="text-sm text-gray-500">Inscrito em 15/10/2025</p>
+            {registrationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-orange-600" />
+                  <p className="mt-2 text-sm text-gray-600">Carregando inscrições...</p>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Confirmado
-                </span>
+            ) : registrationsError ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <AlertTriangle className="mx-auto h-6 w-6 text-red-500" />
+                  <p className="mt-2 text-sm text-red-600">{registrationsError}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refreshRegistrations}
+                    className="mt-2"
+                  >
+                    Tentar novamente
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">Congresso de Louvor</h4>
-                <p className="text-sm text-gray-500">Inscrito em 10/10/2025</p>
+            ) : !Array.isArray(registrations) || registrations.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <TicketIcon className="mx-auto h-6 w-6 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-600">Nenhuma inscrição encontrada</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => router.push('/events')}
+                    className="mt-2"
+                  >
+                    Buscar Eventos
+                  </Button>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Pendente Pagamento
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">Workshop de Música</h4>
-                <p className="text-sm text-gray-500">Inscrito em 05/10/2025</p>
-              </div>
-              <div className="text-right">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Confirmado
-                </span>
-              </div>
-            </div>
-
-            <Button 
-              variant="outline" 
-              className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
-            >
-              Ver Todas as Inscrições
-            </Button>
+            ) : (
+              <>
+                {registrations.map((registration) => {
+                  const statusBadge = getStatusBadge(registration.status);
+                  
+                  return (
+                    <div key={registration.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{registration.eventName}</h4>
+                        <p className="text-sm text-gray-500">
+                          Inscrito em {formatRegistrationDate(registration.registrationDate)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                          {statusBadge.text}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/user/subscriptions')}
+                  className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
+                >
+                  Ver Todas as Inscrições
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
