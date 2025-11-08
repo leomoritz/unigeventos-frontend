@@ -12,12 +12,23 @@ import {
   Shield,
   Eye,
   EyeOff,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
 import { useState } from "react";
+import { changePassword, validatePassword } from "@/services/settingsService";
+import { toast } from "react-toastify";
 
 export default function ConfigurationsPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -26,6 +37,64 @@ export default function ConfigurationsPage() {
     payments: true,
     reminders: true
   });
+
+  const handlePasswordChange = (field: keyof typeof passwordForm, value: string) => {
+    setPasswordForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleChangePassword = async () => {
+    // Validações
+    if (!passwordForm.currentPassword) {
+      toast.error("Digite a senha atual");
+      return;
+    }
+
+    if (!passwordForm.newPassword) {
+      toast.error("Digite a nova senha");
+      return;
+    }
+
+    if (!passwordForm.confirmPassword) {
+      toast.error("Confirme a nova senha");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    // Validar força da senha
+    const passwordValidation = validatePassword(passwordForm.newPassword);
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.message);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+
+      toast.success("Senha alterada com sucesso!");
+      
+      // Limpar formulário
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar senha");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -36,7 +105,7 @@ export default function ConfigurationsPage() {
         </div>
       </div>
 
-      {/* Notification Settings */}
+      {/* Notification Settings
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -123,6 +192,7 @@ export default function ConfigurationsPage() {
           </div>
         </CardContent>
       </Card>
+      */}
 
       {/* Security Settings */}
       <Card>
@@ -142,15 +212,17 @@ export default function ConfigurationsPage() {
               <div className="relative mt-1">
                 <Input
                   id="current-password"
-                  type={showPassword ? "text" : "password"}
+                  type={showCurrentPassword ? "text" : "password"}
                   placeholder="Digite sua senha atual"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
-                  {showPassword ? (
+                  {showCurrentPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
                   ) : (
                     <Eye className="h-4 w-4 text-gray-400" />
@@ -161,32 +233,79 @@ export default function ConfigurationsPage() {
 
             <div>
               <Label htmlFor="new-password">Nova Senha</Label>
-              <Input
-                id="new-password"
-                type="password"
-                placeholder="Digite sua nova senha"
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Digite sua nova senha"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Mínimo 8 caracteres, com pelo menos uma letra maiúscula, minúscula e um número
+              </p>
             </div>
 
             <div>
               <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Confirme sua nova senha"
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirme sua nova senha"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
+                <p className="text-sm text-red-500 mt-1">
+                  As senhas não coincidem
+                </p>
+              )}
             </div>
 
-            <Button className="bg-orange-600 hover:bg-orange-700">
-              Alterar Senha
+            <Button 
+              className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+              onClick={handleChangePassword}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Alterando...
+                </>
+              ) : (
+                "Alterar Senha"
+              )}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Contact Preferences */}
+      {/* Contact Preferences
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -226,14 +345,16 @@ export default function ConfigurationsPage() {
           </div>
         </CardContent>
       </Card>
+      */}
 
-      {/* Save Button */}
+      {/* Save Button 
       <div className="flex justify-end">
         <Button className="bg-orange-600 hover:bg-orange-700">
           <Save size={16} className="mr-2" />
           Salvar Configurações
         </Button>
       </div>
+      */}
     </div>
   );
 }
