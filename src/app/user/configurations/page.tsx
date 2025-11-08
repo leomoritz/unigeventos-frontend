@@ -13,17 +13,27 @@ import {
   Eye,
   EyeOff,
   Save,
-  Loader2
+  Loader2,
+  ShieldCheck,
+  Trash2,
+  AlertTriangle,
+  Download,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { changePassword, validatePassword } from "@/services/settingsService";
+import { requestDataDeletion } from "@/services/lgpdService";
 import { toast } from "react-toastify";
+// Dialog removido - usando modal customizado
 
 export default function ConfigurationsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -93,6 +103,37 @@ export default function ConfigurationsPage() {
       toast.error(error instanceof Error ? error.message : "Erro ao alterar senha");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    console.log("=== HANDLE DELETE ACCOUNT CHAMADO ===");
+    console.log("Texto de confirmação:", confirmationText);
+    
+    if (confirmationText !== "EXCLUIR MINHA CONTA") {
+      toast.error("Digite exatamente 'EXCLUIR MINHA CONTA' para confirmar");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      console.log("=== CHAMANDO requestDataDeletion ===");
+      await requestDataDeletion();
+      
+      console.log("=== EXCLUSÃO SOLICITADA COM SUCESSO ===");
+      toast.success("Solicitação de exclusão enviada com sucesso! Você receberá um email de confirmação.");
+      setShowDeleteModal(false);
+      setConfirmationText("");
+      
+      // Opcional: redirecionar para página de logout após alguns segundos
+      setTimeout(() => {
+        window.location.href = "/logout";
+      }, 3000);
+    } catch (error) {
+      console.error("=== ERRO NA EXCLUSÃO ===", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao solicitar exclusão da conta");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -301,6 +342,182 @@ export default function ConfigurationsPage() {
                 "Alterar Senha"
               )}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* LGPD Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck size={20} className="text-orange-600" />
+            Privacidade e Proteção de Dados (LGPD)
+          </CardTitle>
+          <CardDescription>
+            Gerencie seus dados pessoais e direitos de privacidade
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
+                <FileText size={16} />
+                Seus Direitos de Privacidade
+              </h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• <strong>Acesso:</strong> Visualizar todos os dados que temos sobre você</li>
+                <li>• <strong>Portabilidade:</strong> Exportar seus dados em formato legível</li>
+                <li>• <strong>Correção:</strong> Atualizar informações incorretas</li>
+                <li>• <strong>Exclusão:</strong> Solicitar a remoção completa de seus dados</li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                variant="outline"
+                className="flex items-center gap-2 h-auto py-3"
+                onClick={() => toast.info("Funcionalidade em desenvolvimento")}
+              >
+                <Download size={16} />
+                <div className="text-left">
+                  <div className="font-medium">Exportar Dados</div>
+                  <div className="text-xs text-gray-500">Download dos seus dados pessoais</div>
+                </div>
+              </Button>
+
+              <Button 
+                variant="destructive"
+                className="flex items-center gap-2 h-auto py-3 bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  console.log("=== BOTÃO EXCLUIR CONTA CLICADO ===");
+                  setShowDeleteModal(true);
+                }}
+              >
+                <Trash2 size={16} />
+                <div className="text-left">
+                  <div className="font-medium">Excluir Conta</div>
+                  <div className="text-xs text-red-100">Ação irreversível</div>
+                </div>
+              </Button>
+            </div>
+
+            {/* Modal de Exclusão de Conta */}
+            {showDeleteModal && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                onClick={(e) => {
+                  // Fechar modal apenas se clicar no backdrop, não no conteúdo
+                  if (e.target === e.currentTarget) {
+                    setShowDeleteModal(false);
+                    setConfirmationText("");
+                  }
+                }}
+              >
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 text-red-600 mb-6">
+                      <AlertTriangle size={20} />
+                      <h2 className="text-xl font-bold">Confirmar Exclusão de Conta</h2>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="text-left space-y-4">
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <p className="font-semibold text-red-800 mb-2">⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL</p>
+                        <p className="text-red-700">
+                          Ao confirmar a exclusão da sua conta, todos os seus dados serão permanentemente removidos 
+                          do nosso sistema em até 30 dias úteis.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-gray-900">O que será excluído:</h4>
+                        <ul className="text-sm space-y-1 ml-4 text-gray-700">
+                          <li>• Todos os seus dados pessoais e de perfil</li>
+                          <li>• Histórico de inscrições em eventos</li>
+                          <li>• Dados de pagamento (mantendo apenas registros fiscais obrigatórios)</li>
+                          <li>• Preferências e configurações da conta</li>
+                          <li>• Mensagens e comunicações</li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-amber-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-amber-800 mb-2">📋 Importante sobre dependentes:</h4>
+                        <p className="text-amber-700 text-sm">
+                          Se você possui inscrições com dependentes cadastrados, eles também serão excluídos 
+                          <strong> apenas se não possuírem conta própria no sistema</strong>. 
+                          Dependentes que já criaram conta de usuário não serão afetados.
+                        </p>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-800 mb-2">📄 Registros mantidos por lei:</h4>
+                        <p className="text-gray-700 text-sm">
+                          Conforme legislação fiscal e contábil, manteremos apenas os dados mínimos 
+                          necessários para comprovação de transações financeiras pelo prazo legal de 5 anos.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 mt-6">
+                        <Label htmlFor="confirmation" className="text-base font-semibold text-gray-900">
+                          Para confirmar, digite exatamente: <span className="text-red-600 font-mono">EXCLUIR MINHA CONTA</span>
+                        </Label>
+                        <Input
+                          id="confirmation"
+                          type="text"
+                          placeholder="Digite: EXCLUIR MINHA CONTA"
+                          value={confirmationText}
+                          onChange={(e) => setConfirmationText(e.target.value)}
+                          className="font-mono"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowDeleteModal(false);
+                          setConfirmationText("");
+                        }}
+                        disabled={isDeleting}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting || confirmationText !== "EXCLUIR MINHA CONTA"}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 size={16} className="mr-2" />
+                            Confirmar Exclusão
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+              <p>
+                <strong>Dúvidas sobre seus dados?</strong> Entre em contato conosco através do email: 
+                <a href="mailto:privacidade@unieventos.com" className="text-orange-600 hover:underline ml-1">
+                  privacidade@unieventos.com
+                </a>
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

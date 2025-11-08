@@ -26,8 +26,13 @@ export const apiClient: AxiosInstance = axios.create({
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Obter token dos cookies
-    const token = CookieManager.get('accessToken');
+    // Obter token dos cookies primeiro, depois localStorage como fallback
+    let token = CookieManager.get('accessToken');
+    
+    // Fallback para localStorage (útil durante processo de registro)
+    if (!token && typeof window !== 'undefined') {
+      token = localStorage.getItem('accessToken');
+    }
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -38,7 +43,8 @@ apiClient.interceptors.request.use(
       console.log('API Request:', {
         method: config.method?.toUpperCase(),
         url: config.url,
-        hasToken: !!token
+        hasToken: !!token,
+        tokenSource: CookieManager.get('accessToken') ? 'cookies' : 'localStorage'
       });
     }
     

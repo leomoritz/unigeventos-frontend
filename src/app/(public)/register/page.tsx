@@ -75,8 +75,17 @@ export default function RegisterPage() {
   };
 
   const handleCancelRegister = async () => {
+    // Limpar tokens do localStorage
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    
+    // Limpar tokens dos cookies
+    const { default: CookieManager } = await import('@/lib/cookieManager');
+    CookieManager.remove('accessToken');
+    CookieManager.remove('refreshToken');
+    
+    console.log("=== REGISTRO CANCELADO - Tokens limpos ===");
+    
     const targetUrl = redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login";
     router.push(targetUrl);
     setIsLoading(false);
@@ -93,8 +102,21 @@ export default function RegisterPage() {
 
     try {
       const response = await registerUser(username, password);
+      
+      // Salvar tokens tanto no localStorage quanto nos cookies para compatibilidade
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
+      
+      // Importar o CookieManager dinamicamente para evitar problemas de SSR
+      const { default: CookieManager } = await import('@/lib/cookieManager');
+      CookieManager.set('accessToken', response.accessToken);
+      CookieManager.set('refreshToken', response.refreshToken);
+      
+      console.log("=== DEBUG STEP 1 ===");
+      console.log("Tokens salvos com sucesso");
+      console.log("AccessToken no localStorage:", !!localStorage.getItem("accessToken"));
+      console.log("AccessToken nos cookies:", !!CookieManager.get('accessToken'));
+      
       setError("");
       setStep(2);
     } catch (err: any) {
@@ -149,10 +171,18 @@ export default function RegisterPage() {
     }
 
     const accessToken = localStorage.getItem("accessToken");
+    
+    // Importar dinamicamente para verificar cookies também
+    const { default: CookieManager } = await import('@/lib/cookieManager');
+    const cookieToken = CookieManager.get('accessToken');
 
-    if (!accessToken) {
+    console.log("=== DEBUG TOKEN VALIDATION ===");
+    console.log("Token localStorage:", !!accessToken);
+    console.log("Token cookies:", !!cookieToken);
+
+    if (!accessToken && !cookieToken) {
       setError(
-        "Acesso negado! Entre em contato com o administrador do sistema!"
+        "Acesso negado! Token não encontrado. Entre em contato com o administrador do sistema!"
       );
       setIsLoading(false);
       return;
@@ -161,26 +191,38 @@ export default function RegisterPage() {
     const [day, month, year] = birthdateInput.split("/");
     const dateFormatted = `${year}-${month}-${day}`;
 
+    const personData = {
+      name,
+      birthdate: dateFormatted,
+      gender,
+      maritalStatus,
+      church,
+      clothingSize,
+      choralVoiceType,
+      isLeader,
+      contact: {
+        phoneNumber: contact.phoneNumber || "",
+        email: contact.email,
+      },
+      document: {
+        documentType: document.documentType,
+        number: document.number,
+      },
+    };
+
+    console.log("=== DEBUG REGISTRO PESSOA ===");
+    console.log("Token disponível:", !!accessToken);
+    console.log("Dados sendo enviados:", JSON.stringify(personData, null, 2));
+
     try {
-      await registerPerson(
-        {
-          name,
-          birthdate: dateFormatted,
-          gender,
-          maritalStatus,
-          church,
-          clothingSize,
-          choralVoiceType,
-          isLeader,
-          contact,
-          document,
-        },
-      );
+      await registerPerson(personData);
       
       toast.success("🎉 Cadastro finalizado com sucesso! Um e-mail de boas-vindas foi enviado.", {
         position: "top-right",
         autoClose: 5000,
       });
+      
+      console.log("=== REGISTRO PESSOA CONCLUÍDO ===");
       
       // Aguarda um pouco para o toast aparecer antes de redirecionar
       setTimeout(() => {
@@ -188,10 +230,19 @@ export default function RegisterPage() {
         router.push(targetUrl);
       }, 1500);
     } catch (err: any) {
+      console.error("Erro no registro da pessoa:", err);
       setError(`Erro: ${err.message}`);
     } finally {
+      // Limpar tokens de ambos os locais
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      
+      // Importar dinamicamente para limpar cookies também
+      import('@/lib/cookieManager').then(({ default: CookieManager }) => {
+        CookieManager.remove('accessToken');
+        CookieManager.remove('refreshToken');
+      });
+      
       setIsLoading(false);
     }
   };
