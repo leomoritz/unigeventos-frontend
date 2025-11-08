@@ -144,3 +144,22 @@ export const publishEvent = async (
     throw error;
   }
 };
+
+/**
+ * Busca os próximos eventos publicados
+ */
+export async function getUpcomingPublishedEvents(
+  page: number = 0,
+  size: number = 2
+): Promise<EventDataResponse[]> {
+  try {
+    const response = await authApi.get<PageResponse<EventDataResponse>>(
+      `/events/queries/get-next-events?page=${page}&size=${size}`
+    );
+    return response.data.content;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Erro ao buscar os próximos eventos publicados"
+    );
+  }
+}

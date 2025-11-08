@@ -2,7 +2,8 @@
 
 import { authApi } from '@/lib/apiClient';
 import { Batch } from "./eventsService";
-import { Registration, RegistrationExistsResponse } from "../types/registration";
+import { Registration, RegistrationExistsResponse, RegistrationStatus } from "../types/registration";
+import { PaymentStatus } from './paymentService';
 
 export type SubscriptionStatus =
   | "PENDING"
@@ -185,11 +186,21 @@ export const getAllUserRegistrations = async (
   page: number = 0,
   size: number = 3,
   sortBy: string = 'status',
-  sortDirection: string = 'ASC'
+  sortDirection: string = 'ASC',
+  registrationStatus: RegistrationStatus | null = null,
 ): Promise<RegistrationSummaryPageResponse> => {
   try {
+
+    if (registrationStatus === null) {
+      const response = await authApi.get<GetRegistrationsPageResponse>(
+        `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}&sort=${sortBy}&direction=${sortDirection}`
+      );
+      
+      return response.data.registrations;
+    }
+
     const response = await authApi.get(
-      `/registrations/queries/get-registrations-from-current-user?page=${page}&size=${size}&sort=${sortBy}&direction=${sortDirection}`
+      `/registrations/queries/get-registrations-from-current-user?registrationStatus=${encodeURIComponent(registrationStatus)}&page=${page}&size=${size}&sort=${sortBy}&direction=${sortDirection}`
     );
     
     return response.data.registrations;

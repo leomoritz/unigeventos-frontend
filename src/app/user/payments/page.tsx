@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,9 @@ import jsPDF from 'jspdf';
 
 export default function PaymentsPage() {
   const router = useRouter();
+   const searchParams = useSearchParams();
+   const pendingFilter = searchParams.get('pending') === 'true';
+
   const [searchTerm, setSearchTerm] = useState("");
   const [allRegistrations, setAllRegistrations] = useState<RegistrationSummaryResponse[]>([]);
   const [paymentRegistrations, setPaymentRegistrations] = useState<RegistrationSummaryResponse[]>([]);
@@ -55,8 +58,9 @@ export default function PaymentsPage() {
         // Carregar primeira página com ordenação por status de pagamento (pendentes primeiro)
         // Fallback: se API não suportar paymentStatus, usa registrationDate DESC
         let response;
+        const searchTerm = pendingFilter ? 'PENDING' : null;
         try {
-          response = await getAllUserRegistrations(0, PAGE_SIZE, 'status', 'ASC');
+          response = await getAllUserRegistrations(0, PAGE_SIZE, 'status', 'ASC', searchTerm);
         } catch (error) {
           console.warn('Ordenação por status não suportada, usando registrationDate');
           response = await getAllUserRegistrations(0, PAGE_SIZE, 'registrationDate', 'DESC');

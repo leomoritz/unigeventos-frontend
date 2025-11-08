@@ -10,10 +10,57 @@ import {
   TicketIcon,
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  LockIcon,
+  Loader2,
+  AlertTriangle,
+  CalendarX
 } from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 export default function UserDashboard() {
+  const router = useRouter();
+  const { events, loading, error, refreshEvents } = useUpcomingEvents();
+
+  // Função para calcular quantos dias faltam para o evento
+  const calculateDaysUntilEvent = (eventDate: Date) => {
+    const now = new Date();
+    const event = new Date(eventDate);
+    const diffTime = event.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Função para formatar a data do evento
+  const formatEventDate = (startDate: Date, endDate?: Date) => {
+    const start = new Date(startDate);
+    const startFormatted = start.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long'
+    });
+
+    if (endDate) {
+      const end = new Date(endDate);
+      const endFormatted = end.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long'
+      });
+      
+      // Se for no mesmo mês
+      if (start.getMonth() === end.getMonth()) {
+        return `${start.getDate()}-${end.getDate()} de ${start.toLocaleDateString('pt-BR', { month: 'long' })}`;
+      }
+      return `${startFormatted} - ${endFormatted}`;
+    }
+
+    return startFormatted;
+  };
+
+  // Função para obter o dia do evento (para o ícone)
+  const getEventDay = (eventDate: Date) => {
+    return new Date(eventDate).getDate();
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -58,9 +105,15 @@ export default function UserDashboard() {
             <Calendar className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">2</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                Array.isArray(events) ? events.filter(event => calculateDaysUntilEvent(event.startDatetime) >= 0).length : 0
+              )}
+            </div>
             <p className="text-xs text-gray-500">
-              Nos próximos 30 dias
+              Publicados e disponíveis
             </p>
           </CardContent>
         </Card>
@@ -167,7 +220,8 @@ export default function UserDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
+            <Button
+              onClick={() => router.push('/events/')}
               className="w-full bg-orange-600 hover:bg-orange-700 text-white justify-start"
             >
               <Calendar className="mr-2 h-4 w-4" />
@@ -175,7 +229,8 @@ export default function UserDashboard() {
             </Button>
 
             <Button 
-              variant="outline" 
+              variant="outline"
+              onClick={() => router.push('/user/payments?pending=true')}
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 justify-start"
             >
               <CreditCard className="mr-2 h-4 w-4" />
@@ -184,6 +239,7 @@ export default function UserDashboard() {
 
             <Button 
               variant="outline" 
+              onClick={() => router.push('/user/edit-profile')}
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 justify-start"
             >
               <User className="mr-2 h-4 w-4" />
@@ -191,11 +247,12 @@ export default function UserDashboard() {
             </Button>
 
             <Button 
-              variant="outline" 
+              variant="outline"
+              onClick={() => router.push('/user/configurations')}
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 justify-start"
             >
-              <Bell className="mr-2 h-4 w-4" />
-              Configurar Notificações
+              <LockIcon className="mr-2 h-4 w-4" />
+              Alterar Senha
             </Button>
           </CardContent>
         </Card>
@@ -209,43 +266,116 @@ export default function UserDashboard() {
             <span>Próximos Eventos</span>
           </CardTitle>
           <CardDescription>
-            Eventos que você está inscrito nos próximos dias
+            Próximos eventos publicados disponíveis para inscrição
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold">
-                  25
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-600" />
+                <p className="mt-2 text-gray-600">Carregando próximos eventos...</p>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">Retiro de Jovens 2025</h4>
-                <p className="text-sm text-gray-600">25-27 de Outubro • Águas de Lindóia</p>
-                <p className="text-xs text-orange-600 font-medium">Faltam 4 dias</p>
-              </div>
-              <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                Ver Detalhes
-              </Button>
             </div>
-
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center text-white font-bold">
-                  15
-                </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <AlertTriangle className="mx-auto h-8 w-8 text-red-500" />
+                <p className="mt-2 text-red-600">{error}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshEvents}
+                  className="mt-2"
+                >
+                  Tentar novamente
+                </Button>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">Congresso de Louvor</h4>
-                <p className="text-sm text-gray-600">15 de Novembro • Centro de Convenções</p>
-                <p className="text-xs text-gray-500">Faltam 25 dias</p>
-              </div>
-              <Button size="sm" variant="outline">
-                Ver Detalhes
-              </Button>
             </div>
-          </div>
+          ) : !Array.isArray(events) || events.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <CalendarX className="mx-auto h-8 w-8 text-gray-400" />
+                <p className="mt-2 text-gray-600">Nenhum evento próximo encontrado</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => router.push('/events')}
+                  className="mt-2"
+                >
+                  Buscar Eventos
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Array.isArray(events) && events.map((event, index) => {
+                const daysUntilEvent = calculateDaysUntilEvent(event.startDatetime);
+                const isUpcoming = daysUntilEvent >= 0;
+                const eventDay = getEventDay(event.startDatetime);
+                
+                return (
+                  <div 
+                    key={event.id}
+                    className={`flex items-center space-x-4 p-4 rounded-lg ${
+                      index === 0 && isUpcoming
+                        ? 'bg-orange-50 border border-orange-200'
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold ${
+                        index === 0 && isUpcoming ? 'bg-orange-600' : 'bg-gray-600'
+                      }`}>
+                        {eventDay}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{event.name}</h4>
+                      <p className="text-sm text-gray-600">
+                        {formatEventDate(event.startDatetime, event.endDatetime)} • {event.location}
+                      </p>
+                      {isUpcoming ? (
+                        <p className={`text-xs font-medium ${
+                          index === 0 ? 'text-orange-600' : 'text-gray-500'
+                        }`}>
+                          {daysUntilEvent === 0 ? 'Hoje!' : 
+                           daysUntilEvent === 1 ? 'Amanhã' : 
+                           `Faltam ${daysUntilEvent} dias`}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-red-500">
+                          Evento já realizado
+                        </p>
+                      )}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => router.push(`/events/${event.id}`)}
+                      className={
+                        index === 0 && isUpcoming
+                          ? 'bg-orange-600 hover:bg-orange-700'
+                          : ''
+                      }
+                      variant={index === 0 && isUpcoming ? 'default' : 'outline'}
+                    >
+                      Ver Detalhes
+                    </Button>
+                  </div>
+                );
+              })}
+              
+              <div className="pt-4 border-t border-gray-200">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
+                  onClick={() => router.push('/events')}
+                >
+                  Ver Todos os Eventos
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
