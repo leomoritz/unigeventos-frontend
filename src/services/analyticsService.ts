@@ -10,6 +10,19 @@ export interface AnalyticsEventCountResponse {
   isIncrease: boolean;
 }
 
+export interface UserRegistrationCountResponse {
+  count: number;
+}
+
+export interface UserPaymentCountResponse {
+  count: number;
+  totalAmount: number;
+}
+
+export interface UserEventsParticipationResponse {
+  count: number;
+}
+
 /**
  * Serviço para buscar analytics e métricas do sistema
  */
@@ -78,6 +91,66 @@ export const getMonthlyCompletedEventsCount = async (): Promise<AnalyticsEventCo
     console.error("Erro ao buscar contagem de eventos finalizados no mês:", error);
     throw new Error(
       error.response?.data?.message || "Erro ao buscar dados de analytics"
+    );
+  }
+};
+
+/**
+ * USER ANALYTICS - Funções específicas para o dashboard do usuário
+ */
+
+/**
+ * Obtém a contagem de inscrições ativas do usuário logado
+ */
+export const getUserActiveRegistrationsCount = async (): Promise<number> => {
+  try {
+    const responseConfirmed = await authApi.get<UserRegistrationCountResponse>(
+      `/user-analytics/registration/count-by-status?status=CONFIRMED`
+    );
+    const responsePending = await authApi.get<UserRegistrationCountResponse>(
+      `/user-analytics/registration/count-by-status?status=PENDING`
+    );
+    const totalConfirmed = responseConfirmed.data.count;
+    const totalPending = responsePending.data.count;
+    return totalPending + totalConfirmed;
+  } catch (error: any) {
+    console.error("Erro ao buscar contagem de inscrições ativas:", error);
+    throw new Error(
+      error.response?.data?.message || "Erro ao buscar inscrições ativas"
+    );
+  }
+};
+
+/**
+ * Obtém a contagem e valor total de pagamentos pendentes do usuário logado
+ */
+export const getUserPendingPayments = async (): Promise<UserPaymentCountResponse> => {
+  try {
+    const response = await authApi.get<UserPaymentCountResponse>(
+      `/user-analytics/payment/count-by-status?status=PENDING`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Erro ao buscar pagamentos pendentes:", error);
+    throw new Error(
+      error.response?.data?.message || "Erro ao buscar pagamentos pendentes"
+    );
+  }
+};
+
+/**
+ * Obtém o total de participações em eventos concluídos do usuário logado
+ */
+export const getUserEventsParticipationCount = async (): Promise<number> => {
+  try {
+    const response = await authApi.get<UserEventsParticipationResponse>(
+      `/user-analytics/events/count-per-participation`
+    );
+    return response.data.count;
+  } catch (error: any) {
+    console.error("Erro ao buscar participações em eventos:", error);
+    throw new Error(
+      error.response?.data?.message || "Erro ao buscar participações em eventos"
     );
   }
 };

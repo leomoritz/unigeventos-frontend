@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { useRecentRegistrations } from "@/hooks/useRecentRegistrations";
+import { useUserAnalytics } from "@/hooks/useUserAnalytics";
 export default function UserDashboard() {
   const router = useRouter();
   const { events, loading, error, refreshEvents } = useUpcomingEvents();
@@ -28,6 +29,12 @@ export default function UserDashboard() {
     error: registrationsError,
     refreshRegistrations
   } = useRecentRegistrations();
+  const { 
+    analytics, 
+    loading: analyticsLoading, 
+    error: analyticsError,
+    refreshAnalytics
+  } = useUserAnalytics();
 
   // Função para calcular quantos dias faltam para o evento
   const calculateDaysUntilEvent = (eventDate: Date) => {
@@ -138,11 +145,22 @@ export default function UserDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {registrationsLoading ? (
+              {analyticsLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
+              ) : analyticsError ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-red-500 text-sm">Erro</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refreshAnalytics}
+                    className="h-4 w-4 p-0"
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                  </Button>
+                </div>
               ) : (
-                Array.isArray(registrations) ? 
-                registrations.filter(reg => reg.status === 'CONFIRMED' || reg.status === 'PENDING').length : 0
+                analytics.activeRegistrations
               )}
             </div>
             <p className="text-xs text-gray-500">
@@ -180,9 +198,28 @@ export default function UserDashboard() {
             <CreditCard className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">1</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {analyticsLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : analyticsError ? (
+                <span className="text-red-500 text-sm">Erro</span>
+              ) : (
+                analytics.pendingPayments.count
+              )}
+            </div>
             <p className="text-xs text-gray-500">
-              R$ 150,00 em aberto
+              {analyticsLoading ? (
+                "Carregando..."
+              ) : analyticsError ? (
+                "Erro ao carregar"
+              ) : (
+                analytics.pendingPayments.totalAmount > 0 
+                  ? `R$ ${analytics.pendingPayments.totalAmount.toLocaleString('pt-BR', { 
+                      minimumFractionDigits: 2, 
+                      maximumFractionDigits: 2 
+                    })} em aberto`
+                  : "Nenhum pagamento pendente"
+              )}
             </p>
           </CardContent>
         </Card>
@@ -195,7 +232,15 @@ export default function UserDashboard() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">12</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {analyticsLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : analyticsError ? (
+                <span className="text-red-500 text-sm">Erro</span>
+              ) : (
+                analytics.completedEvents
+              )}
+            </div>
             <p className="text-xs text-gray-500">
               Total de participações
             </p>
