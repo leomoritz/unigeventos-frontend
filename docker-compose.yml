@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  unieventos-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-development}
+    container_name: unieventos-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+      - NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-development}
+      - NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+    networks:
+      - unieventos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  unieventos-network:
+    driver: bridge
+    name: unieventos-network
